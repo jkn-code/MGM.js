@@ -1,4 +1,4 @@
-# mgm.js
+# MGM.js
 Mini game maker
 
 || The project is under development and testing ||
@@ -54,7 +54,11 @@ Download the latest version of **MGM.js**. Place it in the folder where you plan
 ```
 ____
 
-|| wiki under development ||
+[MGM class parameters](MGM-class-parameters.md)
+[MGM class variables](MGM-class-variables.md)
+### MGM class methods
+### Mgm Object parameters
+### Mgm object methods
 
 # Donate
 
