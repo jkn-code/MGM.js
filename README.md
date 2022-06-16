@@ -37,7 +37,7 @@ ____
 
 # Instruction
 
-Download the latest version of MGM.js. Place it in the folder where you plan to make the game. Create an index.html file in this folder. In it, create basic html tags, include the MGM.js file in the head, and create an instance of the class below in the body.
+Download the latest version of **MGM.js**. Place it in the folder where you plan to make the game. Create an index.html file in this folder. In it, create basic html tags, include the MGM.js file in the head, and create an instance of the class below in the body.
 
 ```html
 <!DOCTYPE html>
@@ -56,6 +56,7 @@ Download the latest version of MGM.js. Place it in the folder where you plan to 
 ### MGM class parameters
 
 **name: string**
+
 Название игры. Будет отображаться в title страницы.
 ```js
 const Mgm = new MGM({
@@ -64,6 +65,7 @@ const Mgm = new MGM({
 ```
 ____
 **platforms: string**
+
 Платформы для игры. Принимается строка, где через запятую указаны один или два параметра: "pc, mobile". По умолчанию выбрана только платформа "pc".
 ```js
 platforms: "pc",
@@ -72,18 +74,21 @@ platforms: "pc, mobile"
 ```
 ____
 **ratio: number**
+
 Отношение сторон канваса. По умолчанию 1 = квадрат.
 ```js
 ratio: 1.8 // полный экран
 ```
 ____
 **quality: number**
+
 Разрешение экрана игры - количество пикселей в высоту. По умолчанию 1000.
 ```js
 quality: 300 // олдскул ;)
 ```
 ____
 **scripts: array[string(url-script)]**
+
 Список адресов скриптов для игры, которые необходимо подключить.
 ```js
 scripts: ["Scripts/player.js", "Scripts/units.js", "Scripts/map.js"]
