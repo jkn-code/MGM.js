@@ -56,29 +56,44 @@ Download the latest version of MGM.js. Place it in the folder where you plan to 
 ### MGM class parameters
 
 `name: string`
+
 Название игры. Будет отображаться в title страницы.
 ```js
 const Mgm = new MGM({
     name: 'Моя игруля'
 })
 ```
-____
+
 
 `platforms: string`
+
 Платформы для игры. Принимается строка, где через запятую указаны один или два параметра: "pc, mobile". По умолчанию выбрана только платформа "pc".
 ```js
 platforms: "pc",
 platforms: "mobile"
 platforms: "pc, mobile"
 ```
-____
+
 
 `ratio: number`
 Отношение сторон канваса. По умолчанию 1 = квадрат.
 ```js
 ratio: 1.8 // полный экран
 ```
-____
+
+`quality: number`
+
+Разрешение экрана игры - количество пикселей в высоту. По умолчанию 1000.
+```js
+quality: 300 // олдскул ;)
+```
+
+`scripts: array[string(url-script)]`
+
+Список адресов скриптов для игры, которые необходимо подключить.
+```js
+scripts: ["Scripts/player.js", "Scripts/units.js", "Scripts/map.js"]
+```
 
 ### MGM class variables
 ### MGM class methods
