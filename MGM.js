@@ -291,7 +291,7 @@ class MGM {
 
         if (this.prm.autorun) this._run()
         else {
-            this.curtainIn.innerHTML = this.prm.startTxt || '<center><b>С т а р т</b><br><br><small>нажать для запуска</small></center>'
+            this.curtainIn.innerHTML = this.prm.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
             this.curtain.onclick = () => {
                 if (!this.RUN && !this.STOP)
                     this._run()

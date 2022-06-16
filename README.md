@@ -54,15 +54,15 @@ Download the latest version of **MGM.js**. Place it in the folder where you plan
 ```
 ____
 
-[MGM class parameters](MGM-class-parameters.md)
+[MGM class parameters](instruction/MGM-class-parameters.md)
 
-[MGM class variables](MGM-class-variables.md)
+[MGM class variables](instruction/MGM-class-variables.md)
 
-[MGM class methods](MGM-class-methods.md)
+[MGM class methods](instruction/MGM-class-methods.md)
 
-[Mgm Object parameters](Mgm-Object-parameters.md)
+[Mgm Object parameters](instruction/Mgm-Object-parameters.md)
 
-[Mgm object methods](Mgm-object-methods.md)
+[Mgm object methods](instruction/Mgm-object-methods.md)
 
 # Donate
 
