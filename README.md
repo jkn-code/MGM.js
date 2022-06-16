@@ -56,9 +56,9 @@ ____
 
 [MGM class parameters](MGM-class-parameters.md)
 [MGM class variables](MGM-class-variables.md)
-### MGM class methods
-### Mgm Object parameters
-### Mgm object methods
+[MGM class methods](MGM-class-methods.md)
+[Mgm Object parameters](Mgm-Object-parameters.md)
+[Mgm object methods](Mgm-object-methods.md)
 
 # Donate
 
