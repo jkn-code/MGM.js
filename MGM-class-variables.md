@@ -1,5 +1,4 @@
 ## MGM class variables
-____
 
 **prm: object**
 
@@ -13,7 +12,7 @@ ____
 
 **gameObjs: array[mgm-object]**
 
-Игровые объекты, клонируются из **Mgm.objects** и обрабатываются в игровом цикле.
+Игровые объекты, клонируются из `Mgm.objects` и обрабатываются в игровом цикле.
 ____
 
 **curtain: html-div**
@@ -48,7 +47,7 @@ ____
 
 **plane: html-div**
 
-Поле над канвасом для размещения **html-объектов** с классом "**.mgm**".
+Поле над канвасом для размещения `html-объектов` с классом `.mgm`.
 ____
 
 **kfHeight: number**
@@ -70,10 +69,10 @@ ____
 
 Клавиши клавиатуры. Возвращает true, если клавиша нажата.
 Перечислены клавиши:
-стрелки - **up, down, left, right**;
-функциональные - **space, enter, escape, shift, ctrl, backspace**;
-буквы - **a-z**;
-цифры - **n0 ... n9**.
+стрелки - `up, down, left, right`;
+функциональные - `space, enter, escape, shift, ctrl, backspace`;
+буквы - `a-z`;
+цифры - `n0 ... n9`.
 ```js
 if (Mgm.keys.space) th.fill++
 ```
@@ -82,9 +81,9 @@ ____
 **mouse: object**
 
 Параметры мыши.
-**down**: boolean - нажатие левой кнопки,
-**x, y**: number - координаты от центра канваса,
-**cx, cy**: number - координаты от левого верха.
+`down`: boolean - нажатие левой кнопки,
+`x, y`: number - координаты от центра канваса,
+`cx, cy`: number - координаты от левого верха.
 ```js
 if (Mgm.mouse.down) th.x = Mgm.mouse.x
 ```
