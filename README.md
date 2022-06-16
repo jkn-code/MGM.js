@@ -52,6 +52,7 @@ Download the latest version of **MGM.js**. Place it in the folder where you plan
     </body>
 </html>
 ```
+____
 
 ### MGM class parameters
 
