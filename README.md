@@ -60,7 +60,7 @@ ____
 
 [MGM class methods](instruction/MGM-class-methods.md)
 
-[Mgm Object parameters](instruction/Mgm-Object-parameters.md)
+[Mgm object parameters](instruction/Mgm-object-parameters.md)
 
 [Mgm object methods](instruction/Mgm-object-methods.md)
 

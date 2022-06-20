@@ -204,6 +204,7 @@ class MGM {
                     const cpos = btn.getBoundingClientRect()
                     this.touch[name] = false
                     this._touchBtns.push({
+                        el: btn,
                         name: name,
                         x1: cpos.left,
                         y1: cpos.top,
@@ -227,6 +228,7 @@ class MGM {
                     this.touch[name] = false
                     const cpos = stick.getBoundingClientRect()
                     this._touchSticks.push({
+                        el: stick,
                         name: name,
                         x1: cpos.left,
                         y1: cpos.top,
@@ -366,6 +368,25 @@ class MGM {
 
         // console.log(w / 50);
         document.body.style.fontSize = this.prm.fontSize || (w / 50) + 'px'
+
+        if (this.touch) {
+            this._touchSticks.forEach(stick => {
+                const cpos = stick.el.getBoundingClientRect()
+                stick.x1 = cpos.left
+                stick.y1 = cpos.top
+                stick.x2 = cpos.left + cpos.width
+                stick.y2 = cpos.top + cpos.height
+                stick.px = cpos.left + 60
+                stick.py = cpos.top + 60
+            })
+            this._touchBtns.forEach(btn => {
+                const cpos = btn.el.getBoundingClientRect()
+                btn.x1 = cpos.left
+                btn.y1 = cpos.top
+                btn.x2 = cpos.left + cpos.width
+                btn.y2 = cpos.top + cpos.height
+            })
+        }
     }
 
     _firstV(m) {
@@ -379,13 +400,13 @@ class MGM {
     _run() {
         console.log('run');
         let ok = true
-        if (!this.prm.platforms) this.prm.platforms = 'pc'
-        this.prm.platforms = this.prm.platforms.split(',')
-        if (this.isMobile && this.prm.platforms.indexOf('mobile') == -1) {
+        if (!this.prm.platform) this.prm.platform = 'pc'
+        this.prm.platform = this.prm.platform.split(',')
+        if (this.isMobile && this.prm.platform.indexOf('mobile') == -1) {
             alert('Мобильное использование отключено')
             ok = false
         }
-        if (!this.isMobile && this.prm.platforms.indexOf('pc') == -1) {
+        if (!this.isMobile && this.prm.platform.indexOf('pc') == -1) {
             alert('Использование на ПК отключено')
             ok = false
         }
