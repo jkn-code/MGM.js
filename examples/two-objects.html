@@ -19,6 +19,14 @@
         Mgm.object.unit1.update = th => {
             th.wasd(3)
         }
+
+        Mgm.object.unit2 = {
+            pic: 'Images/box2.png'
+        }
+        Mgm.object.unit2.update = th => {
+            th.positionTo(Mgm.mouse)
+            th.rotation += 5
+        }
     </script>
 </body>
 </html>

@@ -808,6 +808,7 @@ class MGMObject {
         else this._mgm.context.globalAlpha = 1
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
         if (this.flipX) this._mgm.context.scale(this.flipX, 1)
+        if (this.effect) this._mgm.context.filter = this.effect
         if (this._pic) this._mgm.context.drawImage(this._pic,
             -this._width / 2 + this._width * this.pivotX,
             -this._height / 2 - this._height * this.pivotY,
