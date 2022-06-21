@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../MGM.js"></script>
+</head>
+
+<body>
+    <style>
+        .menu div {
+            padding: 3px 10px;
+            color: #F1DFA7;
+            font-size: 12px;
+        }
+    </style>
+    <div class="mgm menu">
+        <div id="divRecord">Рекорд: 0</div>
+        <div id="divPoints">Очки: 0</div>
+    </div>
+    <script>
+        const Mgm = new MGM({
+            name: 'Arcanoid',
+            icon: 'Images/a3.png',
+            vars: {
+                points: 0,
+                record: 0,
+            },
+            autorun: true,
+            bgCanvas: '#1B314B',
+            bgPage: 'white',
+        })
+
+        Mgm.object.board = {
+            y: -450,
+            drawPolygon: {
+                corners: [
+                    [-70, -5],
+                    [70, -5],
+                    [30, 7],
+                    [0, 10],
+                    [-30, 7],
+                ],
+                x: -70,
+                y: -5,
+                width: 140,
+                height: 10,
+                fillColor: '#F1DFA7'
+            },
+            // border: 'line, red',
+            width: 140,
+            height: 10,
+            speed: 10,
+        }
+        Mgm.object.board.start = th => {
+            let save = Mgm.getSave()
+            if (save && save.record) Mgm.record = save.record
+            Mgm.divRecord = 'Рекорд: ' + Mgm.record
+        }
+        Mgm.object.board.update = th => {
+            if (Mgm.keys.d) th.x += th.speed
+            if (Mgm.keys.a) th.x -= th.speed
+            th.limit('x', -450, 450)
+        }
+
+        Mgm.object.ball = {
+            drawCircle: {
+                radius: 10,
+                fillColor: '#F1DFA7'
+            },
+            angle: Mgm.random(-45, 45),
+            width: 20,
+            height: 20,
+            tip: 1,
+            // border: 'dots, green',
+        }
+        Mgm.object.ball.start = th => {
+            if (th.tip == 1) th.drawCircle.fillColor = '#F1DFA7'
+            if (th.tip == 2) th.drawCircle.fillColor = '#E66868'
+        }
+        Mgm.object.ball.update = th => {
+            if (brd = th.contact('board')) th.angle = (th.x - brd.x) * 0.7
+            if (box = th.contact('box')) {
+                th.angle = Mgm.random(135, 225)
+                if (box.tip == "ball")
+                    Mgm.clone({
+                        name: 'ball',
+                        tip: 2,
+                        angle: Mgm.random(-45, 45)
+                    })
+                if (box.tip == "bonus")
+                    Mgm.clone({
+                        name: 'bonus',
+                        x: box.x,
+                        y: box.y,
+                        active: true,
+                    })
+                box.delete()
+                Mgm.points++
+                Mgm.divPoints.innerHTML = 'Очки: ' + Mgm.points
+                let all = Mgm.getObjs('box')
+                if (all.length == 1) {
+                    if (Mgm.points > Mgm.record) {
+                        Mgm.record = Mgm.points
+                        Mgm.setSave({ record: Mgm.record })
+                    }
+                    Mgm.stop('<b>ПОБЕДА <br><br> Очков: ' + Mgm.points + '<br><br>Рекрд: ' + Mgm.record + '</b>')
+                    // 1, потому что box удалится в следующем кадре
+                }
+            }
+            th.bounce()
+            th.step(10)
+            if (th.y < -480) {
+                if (th.tip == 2) th.delete()
+                if (th.tip == 1) Mgm.stop()
+            }
+        }
+
+        Mgm.object.box = {
+            drawRect: {
+                x: -40,
+                y: -15,
+                width: 80,
+                height: 30,
+                fillColor: '#ffa62b',
+                lineColor: 'black',
+            },
+            // border: 'dots, green',
+            width: 70,
+            height: 30,
+            active: false,
+            tip: "base",
+        }
+        Mgm.object.box.start = th => {
+            if (!th.active)
+                for (let x = 0; x < 11; x++)
+                    for (let y = 0; y < 9; y++) {
+                        let tip = "base"
+                        if (y == 1 || y == 5) tip = "bonus"
+                        if (y == 3 || y == 7) tip = "ball"
+                        Mgm.clone({
+                            name: 'box',
+                            x: x * 80 - 400,
+                            y: y * -30 + 430,
+                            tip: tip,
+                            active: true,
+                        })
+                    }
+            if (th.tip == "base") th.drawRect.fillColor = '#3E6FAA'
+            if (th.tip == "ball") th.drawRect.fillColor = '#E66868'
+            if (th.tip == "bonus") th.drawRect.fillColor = '#ABE0ED'
+        }
+
+        Mgm.object.bonus = {
+            drawPolygon: {
+                corners: [
+                    [5, 5],
+                    [30, 0],
+                    [5, -5],
+                    [0, -30],
+                    [-5, -5],
+                    [-30, 0],
+                    [-5, 5],
+                    [0, 30],
+                    [5, 5],
+                ],
+                fillColor: '#ABE0ED',
+            },
+            // border: 'dots, green',
+            width: 50,
+            height: 50,
+            active: false,
+        }
+        Mgm.object.bonus.update = th => {
+            th.rotation += 10
+            th.y -= 5
+            if (th.y < -480) th.delete()
+            if (th.contact('board')) {
+                th.delete()
+                Mgm.points += 10
+            }
+        }
+
+        Mgm.object.fire = {
+            x: -500,
+            y: -500,
+            time: 0,
+        }
+        Mgm.object.fire.start = th => {
+            let ar = []
+            for (let i = 0; i < 20; i++) {
+                ar.push([i * 50, 0])
+                ar.push([i * 50 + 25, 20])
+            }
+            ar.push([1000, 0])
+            th.drawPolygon = {
+                corners: ar,
+                fillColor: '#E66868'
+            }
+        }
+        Mgm.object.fire.update = th => {
+            if (th.time == 0) {
+                th.drawPolygon.corners.forEach((cr, i) => {
+                    if (i % 2 == 1) cr[1] = Mgm.random(0, 30)
+                })
+                th.time = 5
+            } else th.time--
+        }
+
+    </script>
+</body>
+
+</html>

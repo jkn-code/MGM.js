@@ -598,6 +598,7 @@ class MGM {
     }
 
     clone(prm) {
+        if (!this.object[prm.name]) return
         if (this.objects.length < 10000) {
             prm._mgm = this
             const obj = new MGMObject(prm)
@@ -717,6 +718,7 @@ class MGMObject {
 
     _update() {
         if (this.active === false) return
+        if (this._waitSch >= 0) this._waitSch++
         this._work()
         if (this.update) this.update(this)
     }
@@ -1023,6 +1025,7 @@ class MGMObject {
             for (const v of this._mgm.objects)
                 if (v.active !== false &&
                     !v.hidden &&
+                    !v.noContact &&
                     v.name == prm &&
                     this.collider.top > v.collider.bottom &&
                     this.collider.bottom < v.collider.top &&
@@ -1035,6 +1038,7 @@ class MGMObject {
             for (const v of prm)
                 if (v.active !== false &&
                     !v.hidden &&
+                    !v.noContact &&
                     this.collider.top > v.collider.bottom &&
                     this.collider.bottom < v.collider.top &&
                     this.collider.right > v.collider.left &&
@@ -1045,6 +1049,7 @@ class MGMObject {
         } else if (typeof prm == 'object') {
             if (prm.active !== false &&
                 !prm.hidden &&
+                !v.noContact &&
                 this.collider.top > prm.collider.bottom &&
                 this.collider.bottom < prm.collider.top &&
                 this.collider.right > prm.collider.left &&
@@ -1060,6 +1065,7 @@ class MGMObject {
         for (const e of this._mgm.objects) {
             // this._mgm.objects.forEach(e => { // to for of
             if (!e.active) return
+            if (!e.noContact) return
             if (this.collider.top > e.collider.bottom &&
                 this.collider.bottom < e.collider.top &&
                 this.collider.right > e.collider.left &&
@@ -1268,6 +1274,15 @@ class MGMObject {
             prm.active = true
             const p = Object.assign({}, this._mgm.object[this.name], prm)
             return this._mgm.clone(p)
+        }
+    }
+
+    wait(frames, func) {
+        if (!this._waitSch) this._waitSch = 0
+        // console.log(this._waitSch);
+        if (this._waitSch == frames) {
+            this._waitSch = 0
+            func(this)
         }
     }
 }
