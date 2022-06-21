@@ -1279,7 +1279,6 @@ class MGMObject {
 
     wait(frames, func) {
         if (!this._waitSch) this._waitSch = 0
-        // console.log(this._waitSch);
         if (this._waitSch == frames) {
             this._waitSch = 0
             func(this)

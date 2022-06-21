@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,6 +8,7 @@
     <title>Document</title>
     <script src="../MGM.js"></script>
 </head>
+
 <body>
     <script>
         const Mgm = new MGM({
@@ -38,22 +40,24 @@
             angle: Mgm.random(0, 360),
             sound: 'Sounds/sound1.wav',
             tmPoint: 0,
-        }
-        Mgm.object.ball.update = th => {
-            th.bounce()
-            th.step(10)
-            if (th.contact('box')) {
-                th.angle = Mgm.random(0, 360)
-                th.soundPlay()
-                if (th.tmPoint == 0) {
-                    Mgm.points++
-                    th.tmPoint = 30
-                }
-                th.hidden = true
-            } else th.hidden = false
-            if (th.tmPoint > 0) th.tmPoint--
+            
+            update: th => {
+                th.bounce()
+                th.step(10)
+                if (th.contact('box')) {
+                    th.angle = Mgm.random(0, 360)
+                    th.soundPlay()
+                    if (th.tmPoint == 0) {
+                        Mgm.points++
+                        th.tmPoint = 30
+                    }
+                    th.hidden = true
+                } else th.hidden = false
+                if (th.tmPoint > 0) th.tmPoint--
+            }
         }
 
     </script>
 </body>
+
 </html>
