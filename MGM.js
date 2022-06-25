@@ -159,10 +159,12 @@ class MGM {
                 this.touches = e.touches
                 for (let i = 0; i < this.touches.length; i++) {
                     const ti = this.touches[i]
-                    ti.px = ti.clientX // plane
-                    ti.py = ti.clientY
-                    ti.x = ti.px / this.kfHeight - this.canvCX // center
-                    ti.y = -ti.py / this.kfHeight + this.canvCY
+                    // plane
+                    ti.px = ti.clientX - this.plane.cpos.left
+                    ti.py = ti.clientY - this.plane.cpos.top
+                    // center
+                    ti.x = ti.px / this.kfHeight - this.canvCX + this.camera.x
+                    ti.y = -ti.py / this.kfHeight + this.canvCY + this.camera.y
                 }
                 this.touch.px = this.touches[0].px // plane
                 this.touch.py = this.touches[0].py
@@ -201,15 +203,17 @@ class MGM {
                     const btn = document.createElement('div')
                     btn.style.cssText = styleBtn + bcrd + 'width: 60px; height: 60px; opacity: 0.3;'
                     document.body.appendChild(btn)
-                    const cpos = btn.getBoundingClientRect()
                     this.touch[name] = false
+                    const cpos = btn.getBoundingClientRect()
+                    const left = cpos.left - this.plane.cpos.left
+                    const top = cpos.top - this.plane.cpos.top
                     this._touchBtns.push({
                         el: btn,
                         name: name,
-                        x1: cpos.left,
-                        y1: cpos.top,
-                        x2: cpos.left + cpos.width,
-                        y2: cpos.top + cpos.height,
+                        x1: left,
+                        y1: top,
+                        x2: left + cpos.width,
+                        y2: top + cpos.height,
                     })
                 }
 
@@ -227,16 +231,18 @@ class MGM {
                     document.body.appendChild(stick)
                     this.touch[name] = false
                     const cpos = stick.getBoundingClientRect()
+                    const left = cpos.left - this.plane.cpos.left
+                    const top = cpos.top - this.plane.cpos.top
                     this._touchSticks.push({
                         el: stick,
                         name: name,
-                        x1: cpos.left,
-                        y1: cpos.top,
-                        x2: cpos.left + cpos.width,
-                        y2: cpos.top + cpos.height,
-                        px: cpos.left + 60,
-                        py: cpos.top + 60,
-                        d1: 30,
+                        x1: left,
+                        y1: top,
+                        x2: left + cpos.width,
+                        y2: top + cpos.height,
+                        px: left + 60,
+                        py: top + 60,
+                        d1: 20,
                         d2: 60,
                     })
                 }
@@ -337,15 +343,21 @@ class MGM {
         this.prm.ratio = this.prm.ratio || 1
 
         let w = 0, h = 0
-        if (innerWidth > innerHeight) {
-            h = innerHeight
-            w = innerHeight * this.prm.ratio
-        } else {
-            h = innerWidth / this.prm.ratio
-            w = innerWidth
+
+        if (innerWidth < innerHeight) { // if mobile v screen
             this.canvas.style.top = '0px'
             this.canvas.style.transform = 'translate(-50%, 0%)'
+        } else {
+            this.canvas.style.top = '50%'
+            this.canvas.style.transform = 'translate(-50%, -50%)'
         }
+        h = innerHeight
+        w = innerHeight * this.prm.ratio
+        if (w > innerWidth) {
+            h = innerWidth / this.prm.ratio
+            w = innerWidth
+        }
+
         this.canvas.style.width = w + 'px'
         this.canvas.style.height = h + 'px'
         this.prm.quality = this.prm.quality || 1000
@@ -356,6 +368,7 @@ class MGM {
         this.canvCY = this.canvas.height / 2
 
         const cpos = this.canvas.getBoundingClientRect()
+        this.plane.cpos = cpos
         this.plane.style.top = cpos.top + 'px'
         this.plane.style.left = cpos.left + 'px'
         this.plane.style.width = cpos.width + 'px'
@@ -372,19 +385,23 @@ class MGM {
         if (this.touch) {
             this._touchSticks.forEach(stick => {
                 const cpos = stick.el.getBoundingClientRect()
-                stick.x1 = cpos.left
-                stick.y1 = cpos.top
-                stick.x2 = cpos.left + cpos.width
-                stick.y2 = cpos.top + cpos.height
-                stick.px = cpos.left + 60
-                stick.py = cpos.top + 60
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                stick.x1 = left
+                stick.y1 = top
+                stick.x2 = left + cpos.width
+                stick.y2 = top + cpos.height
+                stick.px = left + 60
+                stick.py = top + 60
             })
             this._touchBtns.forEach(btn => {
                 const cpos = btn.el.getBoundingClientRect()
-                btn.x1 = cpos.left
-                btn.y1 = cpos.top
-                btn.x2 = cpos.left + cpos.width
-                btn.y2 = cpos.top + cpos.height
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                btn.x1 = left
+                btn.y1 = top
+                btn.x2 = left + cpos.width
+                btn.y2 = top + cpos.height
             })
         }
     }
@@ -437,12 +454,15 @@ class MGM {
         if (this.touch) {
             this._touchBtns.forEach(btn => this.touch[btn.name] = false)
             this._touchSticks.forEach(stick => this.touch[stick.name] = false)
+            let joy = false
 
             for (let i = 0; i < this.touches.length; i++) {
                 const ti = this.touches[i]
                 this._touchBtns.forEach(btn => {
-                    if (ti.px > btn.x1 && ti.px < btn.x2 && ti.py > btn.y1 && ti.py < btn.y2)
+                    if (ti.px > btn.x1 && ti.px < btn.x2 && ti.py > btn.y1 && ti.py < btn.y2) {
                         this.touch[btn.name] = true
+                        joy = true
+                    }
                 })
 
                 this._touchSticks.forEach(stick => {
@@ -452,10 +472,12 @@ class MGM {
                             const a = this.angleXY(ti.px, ti.py, stick.px, stick.py)
                             this.touch[stick.name] = a - 90
                         }
-
+                        if (d < stick.d2) joy = true
                     }
                 })
             }
+
+            if (joy) this.touch.down = false
         }
 
         if (this.prm.orderY) this.objects.sort(this._orderY)
@@ -574,8 +596,10 @@ class MGM {
         return save[decodeURI(location.pathname)] || {}
     }
 
-    random(min = 0, max = 1) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+    random(min, max) {
+        if (min !== undefined && max !== undefined) return Math.floor(Math.random() * (max - min + 1)) + min;
+        else if (Math.random() >= 0.5) return true
+        else return false
     }
 
     angleXY(x1, y1, x2, y2) {
@@ -647,8 +671,13 @@ class MGMObject {
             if (j != 'pic' && j != 'pics' &&
                 j != 'sound' && j != 'sounds' &&
                 j != '_mgm' &&
-                typeof v == 'object') this[j] = JSON.parse(JSON.stringify(v))
-            else this[j] = v
+                typeof v == 'object') {
+                this[j] = JSON.parse(JSON.stringify(v))
+                // this[j] = structuredClone(v)
+            }
+            else {
+                this[j] = v
+            }
         }
         for (const j in prm) this[j] = prm[j]
         // console.log(this);
@@ -709,7 +738,7 @@ class MGMObject {
             this.cameraZY = this.cameraZ
         }
 
-        this._draws = ['drawText', 'drawLine', 'drawRect', 'drawCircle', 'drawPolygon']
+        // this._draws = ['drawText', 'drawLine', 'drawRect', 'drawCircle', 'drawPolygon']
 
         // console.log(this);
         if (this.start) this.start(this)
@@ -748,8 +777,6 @@ class MGMObject {
 
         this._width = this.width * this.size
         this._height = this.height * this.size
-
-
 
         this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
         this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
@@ -797,6 +824,12 @@ class MGMObject {
         if (this.hidden) return
         if (this.active === false) return
 
+        // this._cameraZXm = 0
+        // this._camersZYm = 0
+        // if (!this.noCamera) {
+        //     this._cameraZXm = - this._mgm.camera.x * this.cameraZX
+        //     this._camersZYm = this._mgm.camera.y * this.cameraZY
+        // }
         this._cameraZXm = - this._mgm.camera.x * this.cameraZX
         this._camersZYm = this._mgm.camera.y * this.cameraZY
 
@@ -1075,7 +1108,10 @@ class MGMObject {
     }
 
     contactXY(x, y) {
-        if (x > this.collider.left && x < this.collider.right && y > this.collider.bottom && y < this.collider.top) return true
+        if (x > this.collider.left && 
+            x < this.collider.right && 
+            y > this.collider.bottom && 
+            y < this.collider.top) return true
         else return false
     }
 
@@ -1086,6 +1122,7 @@ class MGMObject {
             for (const v of this._mgm.objects)
                 if (v.active !== false &&
                     !v.hidden &&
+                    !v.noContact &&
                     v.name == prm &&
                     this.collider.bottom > v.collider.bottom &&
                     this.collider.top < v.collider.top &&
@@ -1098,6 +1135,7 @@ class MGMObject {
             for (const v of prm)
                 if (v.active !== false &&
                     !v.hidden &&
+                    !v.noContact &&
                     this.collider.bottom > v.collider.bottom &&
                     this.collider.top < v.collider.top &&
                     this.collider.left > v.collider.left &&
@@ -1108,6 +1146,7 @@ class MGMObject {
         } else if (typeof prm == 'object') {
             if (prm.active !== false &&
                 !prm.hidden &&
+                !prm.noContact &&
                 this.collider.bottom > prm.collider.bottom &&
                 this.collider.top < prm.collider.top &&
                 this.collider.left > prm.collider.left &&
@@ -1133,6 +1172,7 @@ class MGMObject {
                     if (this != v &&
                         v.active !== false &&
                         !v.hidden &&
+                        !v.noContact &&
                         y > v.collider.bottom &&
                         y < v.collider.top &&
                         x > v.collider.left &&
@@ -1155,6 +1195,7 @@ class MGMObject {
                     if (this != v &&
                         v.active !== false &&
                         !v.hidden &&
+                        !v.noContact &&
                         y > v.collider.bottom &&
                         y < v.collider.top &&
                         x > v.collider.left &&
@@ -1271,9 +1312,9 @@ class MGMObject {
     clone(prm) {
         if (this.active === false) {
             if (!prm) prm = {}
+            prm.name = this.name
             prm.active = true
-            const p = Object.assign({}, this._mgm.object[this.name], prm)
-            return this._mgm.clone(p)
+            return this._mgm.clone(prm)
         }
     }
 

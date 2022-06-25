@@ -57,9 +57,9 @@
             th.wasd(2)
             th.angle++
             if (dots = th.raycast(th.angle, 100, true))
-                dots.forEach(d => {
-                    d.pic = 'p2'
-                    d.alpha = 1
+                dots.forEach(dot => {
+                    dot.pic = 'p2'
+                    dot.alpha = 1
                 })
             if (dot = th.raycast(th.angle - 180, 100)) {
                 dot.pic = 'p3'
@@ -95,11 +95,9 @@
         Mgm.object.dot.start = th => {
             if (!th.active)
                 for (let i = 0; i < 500; i++)
-                    Mgm.clone({
-                        name: 'dot',
+                    th.clone({
                         x: Mgm.random(-500, 500),
                         y: Mgm.random(-500, 500),
-                        active: true,
                     })
         }
         Mgm.object.dot.update = th => {
@@ -108,6 +106,25 @@
                 th.alpha = 0.3
                 th.t = 5
             } else th.t--
+        }
+
+        Mgm.object.noRay = {
+            pic: 'Images/box2.png',
+            size: 0.5,
+            active: false,
+            noContact: true,
+
+            start: th => {
+                for (let i = 0; i < 10; i++)
+                    th.clone({
+                        x: Mgm.random(-500, 500),
+                        y: Mgm.random(-500, 500),
+                    })
+            },
+
+            update: th => {
+                th.rotation -= 1
+            }
         }
 
     </script>
