@@ -15,6 +15,7 @@ class MGM {
 
     _loadPage() {
         this.object = {}
+        this.names = {}
         this._build = {}
 
         if (this.prm.vars)
@@ -139,10 +140,26 @@ class MGM {
 
             // HTML MGM TO PLANE
             let amgm = document.querySelectorAll('.mgm')
-            for (const e of amgm)
+            for (const e of amgm) {
+                console.log(e);
                 this.plane.appendChild(e)
+            }
 
             this._crtHtmlId(this.plane)
+
+            this._htmls = []
+            for (const e of amgm) {
+                const cpos = e.getBoundingClientRect()
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                this._htmls.push({
+                    el: e,
+                    x1: left,
+                    y1: top,
+                    x2: left + cpos.width,
+                    y2: top + cpos.height,
+                })
+            }
         }
 
 
@@ -252,12 +269,12 @@ class MGM {
 
 
         // MOUSE
-        {
+        if (!this.isMobile) {
             this.mouse = {}
             this.plane.onmousemove = e => {
                 // plane
-                this.mouse.px = e.offsetX
-                this.mouse.py = e.offsetY
+                this.mouse.px = e.pageX - this.plane.cpos.left
+                this.mouse.py = e.pageY - this.plane.cpos.top
                 // center
                 this.mouse.x = this.mouse.px / this.kfHeight - this.canvCX + this.camera.x
                 this.mouse.y = -this.mouse.py / this.kfHeight + this.canvCY + this.camera.y
@@ -311,12 +328,22 @@ class MGM {
 
     _crtHtmlId(el) {
         let chel = el.childNodes
+        let th = this
         for (let i = 0; i < chel.length; i++) {
-            if (chel[i].id && chel[i].id != '') this[chel[i].id] = chel[i]
+            if (chel[i].id && chel[i].id != '') {
+                this[chel[i].id] = chel[i]
+                this[chel[i].id].show = function () {
+                    this.style.display = 'block'
+                    th._getHtmlBorders()
+                }
+                this[chel[i].id].hide = function () {
+                    this.style.display = 'none'
+                    th._getHtmlBorders()
+                }
+            }
+
             this._crtHtmlId(chel[i])
         }
-
-        // this._classInf()
     }
 
     _loadPic(src) {
@@ -382,6 +409,10 @@ class MGM {
         // console.log(w / 50);
         document.body.style.fontSize = this.prm.fontSize || (w / 50) + 'px'
 
+        this._getHtmlBorders()
+    }
+
+    _getHtmlBorders() {
         if (this.touch) {
             this._touchSticks.forEach(stick => {
                 const cpos = stick.el.getBoundingClientRect()
@@ -402,6 +433,17 @@ class MGM {
                 btn.y1 = top
                 btn.x2 = left + cpos.width
                 btn.y2 = top + cpos.height
+            })
+        }
+        if (this.mouse) {
+            this._htmls.forEach(ht => {
+                const cpos = ht.el.getBoundingClientRect()
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                ht.x1 = left
+                ht.y1 = top
+                ht.x2 = left + cpos.width
+                ht.y2 = top + cpos.height
             })
         }
     }
@@ -455,6 +497,7 @@ class MGM {
             this._touchBtns.forEach(btn => this.touch[btn.name] = false)
             this._touchSticks.forEach(stick => this.touch[stick.name] = false)
             let joy = false
+            let html = false
 
             for (let i = 0; i < this.touches.length; i++) {
                 const ti = this.touches[i]
@@ -468,16 +511,30 @@ class MGM {
                 this._touchSticks.forEach(stick => {
                     if (ti.px > stick.x1 && ti.px < stick.x2 && ti.py > stick.y1 && ti.py < stick.y2) {
                         const d = this.distanceXY(ti.px, ti.py, stick.px, stick.py)
-                        if (d > stick.d1 && d < stick.d2) {
-                            const a = this.angleXY(ti.px, ti.py, stick.px, stick.py)
-                            this.touch[stick.name] = a - 90
-                        }
+                        if (d > stick.d1 && d < stick.d2)
+                            this.touch[stick.name] = this.angleXY(stick.px, stick.py, ti.px, ti.py)
                         if (d < stick.d2) joy = true
                     }
                 })
+
+                this._htmls.forEach(ht => {
+                    if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2)
+                        html = true
+                })
             }
 
-            if (joy) this.touch.down = false
+            if (joy || html) this.touch.down = false
+        }
+
+        if (this.mouse) {
+            let html = false
+
+            this._htmls.forEach(ht => {
+                if (this.mouse.px > ht.x1 && this.mouse.px < ht.x2 && this.mouse.py > ht.y1 && this.mouse.py < ht.y2)
+                    html = true
+            })
+
+            if (html) this.mouse.down = false
         }
 
         if (this.prm.orderY) this.objects.sort(this._orderY)
@@ -605,7 +662,7 @@ class MGM {
     angleXY(x1, y1, x2, y2) {
         let angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI
         if (angle > 180) angle -= 360
-        if (angle <= -180) angle += 360
+        if (angle < -180) angle += 360
         return angle
     }
 
@@ -649,6 +706,13 @@ class MGM {
         return null
     }
 
+    getStep(angle, dist) {
+        const rad = -angle * Math.PI / 180;
+        return {
+            x: dist * Math.cos(rad),
+            y: dist * Math.sin(rad)
+        }
+    }
 }
 
 
@@ -701,11 +765,10 @@ class MGMObject {
                 return a - b;
             })
         }
-        if (!this.rotation) this.rotation = 0
-        if (!this.angle) this.angle = 0
-        if (!this.size) this.size = 1
-        if (!this.alpha) this.alpha = 1
-        if (!this.flip) this.flip = 1
+        if (this.rotation == undefined) this.rotation = 0
+        if (this.angle == undefined) this.angle = 0
+        if (this.size == undefined) this.size = 1
+        if (this.alpha == undefined) this.alpha = 1
 
         if (this.pivotY === undefined) this.pivotY = 0
         if (this.pivotX === undefined) this.pivotX = 0
@@ -713,17 +776,18 @@ class MGMObject {
         if (this.pics && !this.pic) this.pic = this._mgm._firstJ(this.pics)
 
         if (!this.collider) this.collider = {}
-        if (!this.collider.width) this.collider.width = 1
-        if (!this.collider.height) this.collider.height = 1
-        if (!this.collider.x) this.collider.x = 0
-        if (!this.collider.y) this.collider.y = 0
+        if (this.collider.width == undefined) this.collider.width = 1
+        if (this.collider.height == undefined) this.collider.height = 1
+        if (this.collider.x == undefined) this.collider.x = 0
+        if (this.collider.y == undefined) this.collider.y = 0
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 1
             if (this.onGround === undefined) this.onGround = false
         }
 
-        if (this.inMgm) this._mgm[this.inMgm] = this
+        // if (this.inMgm) this._mgm[this.inMgm] = this
+        this._mgm.names[this.name] = this
 
         if (this.border) {
             if (typeof this.border == 'string') this.border = this.border.split(',')
@@ -731,14 +795,15 @@ class MGMObject {
             if (this.border[1]) this.border[1] = this.border[1].trim()
         }
 
-        if (!this.cameraZX) this.cameraZX = 1
-        if (!this.cameraZY) this.cameraZY = 1
+        if (this.cameraZX == undefined) this.cameraZX = 1
+        if (this.cameraZY == undefined) this.cameraZY = 1
         if (this.cameraZ) {
             this.cameraZX = this.cameraZ
             this.cameraZY = this.cameraZ
         }
 
-        // this._draws = ['drawText', 'drawLine', 'drawRect', 'drawCircle', 'drawPolygon']
+        if (this.flipXValue == undefined) this.flipXValue = 1
+        if (this.flipYValue == undefined) this.flipYValue = 1
 
         // console.log(this);
         if (this.start) this.start(this)
@@ -747,7 +812,7 @@ class MGMObject {
 
     _update() {
         if (this.active === false) return
-        if (this._waitSch >= 0) this._waitSch++
+        this._waitWork()
         this._work()
         if (this.update) this.update(this)
     }
@@ -759,6 +824,7 @@ class MGMObject {
             this._mgm.camera.x = this.x
             this._mgm.camera.y = this.y
         }
+
         this._pic = this._getPic()
 
         if (!this._pic) {
@@ -818,6 +884,13 @@ class MGMObject {
                 this.gravVel = 1
             }
         }
+
+        if (this.flipX)
+            if (this.angle > -90 && this.angle < 90) this.flipXValue = 1
+            else this.flipXValue = -1
+        if (this.flipY)
+            if (this.angle > 0) this.flipYValue = 1
+            else this.flipYValue = -1
     }
 
     _draw() {
@@ -842,7 +915,7 @@ class MGMObject {
         if (this.alpha < 1) this._mgm.context.globalAlpha = this.alpha
         else this._mgm.context.globalAlpha = 1
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
-        if (this.flipX) this._mgm.context.scale(this.flipX, 1)
+        this._mgm.context.scale(this.flipXValue, this.flipYValue)
         if (this.effect) this._mgm.context.filter = this.effect
         if (this._pic) this._mgm.context.drawImage(this._pic,
             -this._width / 2 + this._width * this.pivotX,
@@ -937,6 +1010,8 @@ class MGMObject {
         if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x1) prm.x1 = 0
         if (!prm.y1) prm.y1 = 0
+        if (!prm.x2) prm.x2 = 0
+        if (!prm.y2) prm.y2 = 0
         this._mgm.context.beginPath();
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         this._mgm.context.lineWidth = prm.width || 1
@@ -1010,7 +1085,7 @@ class MGMObject {
     }
 
     step(speed) {
-        const rad = -(this.angle - 90) * Math.PI / 180;
+        const rad = -this.angle * Math.PI / 180;
         this.x += speed * Math.cos(rad)
         this.y += speed * Math.sin(rad)
     }
@@ -1108,9 +1183,9 @@ class MGMObject {
     }
 
     contactXY(x, y) {
-        if (x > this.collider.left && 
-            x < this.collider.right && 
-            y > this.collider.bottom && 
+        if (x > this.collider.left &&
+            x < this.collider.right &&
+            y > this.collider.bottom &&
             y < this.collider.top) return true
         else return false
     }
@@ -1219,7 +1294,7 @@ class MGMObject {
     angleTo(prm) {
         let obj = prm
         if (typeof prm == 'string') obj = this._mgm.getObj(prm)
-        return -this._mgm.angleObj(this, obj) + 90
+        return -this._mgm.angleObj(this, obj)
     }
 
     distanceTo(prm) {
@@ -1318,11 +1393,23 @@ class MGMObject {
         }
     }
 
-    wait(frames, func) {
-        if (!this._waitSch) this._waitSch = 0
-        if (this._waitSch == frames) {
+    wait(frames, func, loop = false) {
+        if (frames == null) this._waitSch = undefined
+        else if (!this._waitSch) {
             this._waitSch = 0
-            func(this)
+            this._waitFrames = frames
+            this._waitFunc = func
+            this._waitLoop = loop
+        }
+    }
+
+    _waitWork() {
+        if (this._waitSch !== undefined) {
+            if (this._waitSch == this._waitFrames) {
+                this._waitFunc()
+                if (this._waitLoop) this._waitSch = 0
+                else this._waitSch = undefined
+            } else this._waitSch++
         }
     }
 }
