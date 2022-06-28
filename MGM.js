@@ -140,10 +140,8 @@ class MGM {
 
             // HTML MGM TO PLANE
             let amgm = document.querySelectorAll('.mgm')
-            for (const e of amgm) {
-                console.log(e);
+            for (const e of amgm) 
                 this.plane.appendChild(e)
-            }
 
             this._crtHtmlId(this.plane)
 
@@ -484,10 +482,13 @@ class MGM {
 
     _crtObjs() {
         this.context.font = '20px Tahoma'// dont work in _init (?)
-        for (let j in this.object) {
+        for (const j in this.object) {
             this.object[j].name = j
             this.objects.push(new MGMObject({ name: j, _mgm: this }))
         }
+
+        for(const v of this.objects)
+            if (v.awake) v.awake(v)
 
         this._loop()
     }
@@ -699,8 +700,10 @@ class MGM {
     getObjs(name) {
         let ot = []
         for (const v of this.objects)
-            if (v.active !== false && v.name == name)
-                ot.push(v)
+            if (v.active !== false) {
+                if (name && v.name == name) ot.push(v)
+                if (!name) ot.push(v)
+            }
 
         if (ot.length > 0) return ot
         return null
@@ -786,7 +789,6 @@ class MGMObject {
             if (this.onGround === undefined) this.onGround = false
         }
 
-        // if (this.inMgm) this._mgm[this.inMgm] = this
         this._mgm.names[this.name] = this
 
         if (this.border) {
@@ -804,6 +806,9 @@ class MGMObject {
 
         if (this.flipXValue == undefined) this.flipXValue = 1
         if (this.flipYValue == undefined) this.flipYValue = 1
+
+        if (this.width) this._prmWidth = this.width
+        if (this.height) this._prmHeight = this.height
 
         // console.log(this);
         if (this.start) this.start(this)
@@ -825,21 +830,26 @@ class MGMObject {
             this._mgm.camera.y = this.y
         }
 
-        this._pic = this._getPic()
-
-        if (!this._pic) {
-            if (!this.width) this.width = 1
-            if (!this.height) this.height = 1
-        }
-
         if (this.physics && this.mass) {
             this.gravVel += 0.5
             this.y -= this.mass * this.gravVel
             this.onGround = false
         }
 
-        if (!this.width) this.width = this._pic.width
-        if (!this.height) this.height = this._pic.height
+        this._pic = this._getPic()
+
+        if (!this._pic) {
+            if (!this._prmWidth) this._prmWidth = 1
+            if (!this._prmHeight) this._prmHeight = 1
+        }
+
+        // if (!this.width) this.width = this._pic.width
+        // if (!this.height) this.height = this._pic.height
+
+        if (this._prmWidth) this.width = this._prmWidth
+        else this.width = this._pic.width
+        if (this._prmHeight) this.height = this._prmHeight
+        else this.height = this._pic.height
 
         this._width = this.width * this.size
         this._height = this.height * this.size
