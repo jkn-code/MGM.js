@@ -140,7 +140,7 @@ class MGM {
 
             // HTML MGM TO PLANE
             let amgm = document.querySelectorAll('.mgm')
-            for (const e of amgm) 
+            for (const e of amgm)
                 this.plane.appendChild(e)
 
             this._crtHtmlId(this.plane)
@@ -469,7 +469,7 @@ class MGM {
         }
 
         if (ok) {
-            if (this.prm.fullscreen) this._toggleFullScreen()
+            if (this.prm.fullscreen && !this.prm.autorun) this._toggleFullScreen()
             this.curtainIn.innerHTML = ''
             this.curtain.style.display = 'none'
             if (this.prm.cursor === false) this.plane.style.cursor = 'none'
@@ -487,7 +487,7 @@ class MGM {
             this.objects.push(new MGMObject({ name: j, _mgm: this }))
         }
 
-        for(const v of this.objects)
+        for (const v of this.objects)
             if (v.awake) v.awake(v)
 
         this._loop()
@@ -810,6 +810,8 @@ class MGMObject {
         if (this.width) this._prmWidth = this.width
         if (this.height) this._prmHeight = this.height
 
+        this._wait = {}
+
         // console.log(this);
         if (this.start) this.start(this)
         // this._classInf()
@@ -817,7 +819,7 @@ class MGMObject {
 
     _update() {
         if (this.active === false) return
-        this._waitWork()
+        this._waitsWork()
         this._work()
         if (this.update) this.update(this)
     }
@@ -907,12 +909,6 @@ class MGMObject {
         if (this.hidden) return
         if (this.active === false) return
 
-        // this._cameraZXm = 0
-        // this._camersZYm = 0
-        // if (!this.noCamera) {
-        //     this._cameraZXm = - this._mgm.camera.x * this.cameraZX
-        //     this._camersZYm = this._mgm.camera.y * this.cameraZY
-        // }
         this._cameraZXm = - this._mgm.camera.x * this.cameraZX
         this._camersZYm = this._mgm.camera.y * this.cameraZY
 
@@ -1059,7 +1055,7 @@ class MGMObject {
         if (!prm.y) prm.y = 0
         this._mgm.context.beginPath();
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
-        this._mgm.context.arc(prm.x, prm.y, prm.radius, 0, 2 * Math.PI);
+        this._mgm.context.arc(prm.x, -prm.y, prm.radius, 0, 2 * Math.PI);
         if (prm.fillColor && prm.fillColor != '') {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
@@ -1136,62 +1132,6 @@ class MGMObject {
         this._toDel = true
     }
 
-    contact(prm) {
-        let ot = null
-
-        if (typeof prm == 'string') {
-            for (const v of this._mgm.objects)
-                if (v.active !== false &&
-                    !v.hidden &&
-                    !v.noContact &&
-                    v.name == prm &&
-                    this.collider.top > v.collider.bottom &&
-                    this.collider.bottom < v.collider.top &&
-                    this.collider.right > v.collider.left &&
-                    this.collider.left < v.collider.right) {
-                    ot = v
-                    break
-                }
-        } else if (Array.isArray(prm)) {
-            for (const v of prm)
-                if (v.active !== false &&
-                    !v.hidden &&
-                    !v.noContact &&
-                    this.collider.top > v.collider.bottom &&
-                    this.collider.bottom < v.collider.top &&
-                    this.collider.right > v.collider.left &&
-                    this.collider.left < v.collider.right) {
-                    ot = v
-                    break
-                }
-        } else if (typeof prm == 'object') {
-            if (prm.active !== false &&
-                !prm.hidden &&
-                !v.noContact &&
-                this.collider.top > prm.collider.bottom &&
-                this.collider.bottom < prm.collider.top &&
-                this.collider.right > prm.collider.left &&
-                this.collider.left < prm.collider.right)
-                ot = prm
-        }
-
-        return ot
-    }
-
-    contacts() {
-        let ot = []
-        for (const e of this._mgm.objects) {
-            // this._mgm.objects.forEach(e => { // to for of
-            if (!e.active) return
-            if (!e.noContact) return
-            if (this.collider.top > e.collider.bottom &&
-                this.collider.bottom < e.collider.top &&
-                this.collider.right > e.collider.left &&
-                this.collider.left < e.collider.right) ot.push(e)
-        }
-        return ot
-    }
-
     contactXY(x, y) {
         if (x > this.collider.left &&
             x < this.collider.right &&
@@ -1200,47 +1140,78 @@ class MGMObject {
         else return false
     }
 
-    contactIn(prm) {
+    contactObj(obj) {
+        if (obj.active !== false &&
+            !obj.hidden &&
+            !obj.noContact &&
+            this.collider.top > obj.collider.bottom &&
+            this.collider.bottom < obj.collider.top &&
+            this.collider.right > obj.collider.left &&
+            this.collider.left < obj.collider.right) return obj
+    }
+
+    contact(prm, key = 'name') {
         let ot = null
 
-        if (typeof prm == 'string') {
-            for (const v of this._mgm.objects)
-                if (v.active !== false &&
-                    !v.hidden &&
-                    !v.noContact &&
-                    v.name == prm &&
-                    this.collider.bottom > v.collider.bottom &&
-                    this.collider.top < v.collider.top &&
-                    this.collider.left > v.collider.left &&
-                    this.collider.right < v.collider.right) {
-                    ot = v
-                    break
-                }
-        } else if (Array.isArray(prm)) {
-            for (const v of prm)
-                if (v.active !== false &&
-                    !v.hidden &&
-                    !v.noContact &&
-                    this.collider.bottom > v.collider.bottom &&
-                    this.collider.top < v.collider.top &&
-                    this.collider.left > v.collider.left &&
-                    this.collider.right < v.collider.right) {
-                    ot = v
-                    break
-                }
-        } else if (typeof prm == 'object') {
-            if (prm.active !== false &&
-                !prm.hidden &&
-                !prm.noContact &&
-                this.collider.bottom > prm.collider.bottom &&
-                this.collider.top < prm.collider.top &&
-                this.collider.left > prm.collider.left &&
-                this.collider.right < prm.collider.right)
-                ot = prm
-        }
+        for (const obj of this._mgm.objects)
+            if (obj[key] == prm)
+                if (ot = this.contactObj(obj)) break
 
         return ot
     }
+
+    contacts(prm, key = 'name') {
+        let mas = []
+        let ot = null
+
+        for (const obj of this._mgm.objects) {
+            let ok = true
+            if (obj == this) ok = false
+            if (prm && obj[key] != prm) ok = false
+            if (ok)
+                if (ot = this.contactObj(obj))
+                    mas.push(ot)
+        }
+
+        if (mas.length > 0) return mas
+    }
+
+    contactObjIn(obj) {
+        if (obj.active !== false &&
+            !obj.hidden &&
+            !obj.noContact &&
+            this.collider.bottom > obj.collider.bottom &&
+            this.collider.top < obj.collider.top &&
+            this.collider.left > obj.collider.left &&
+            this.collider.right < obj.collider.right) return obj
+    }
+
+    contactIn(prm, key = 'name') {
+        let ot = null
+
+        for (const obj of this._mgm.objects)
+            if (obj[key] == prm)
+                if (ot = this.contactObjIn(obj)) break
+
+        return ot
+    }
+
+    contactsIn(prm, key = 'name') {
+        let mas = []
+        let ot = null
+
+        for (const obj of this._mgm.objects) {
+            let ok = true
+            if (obj == this) ok = false
+            if (prm && obj[key] != prm) ok = false
+            if (ok)
+                if (ot = this.contactObjIn(obj))
+                    mas.push(ot)
+        }
+
+        if (mas.length > 0) return mas
+    }
+
 
     raycast(angle, steps, all = false, density = 10) {
         const rad = -(angle - 90) * Math.PI / 180;
@@ -1403,23 +1374,36 @@ class MGMObject {
         }
     }
 
-    wait(frames, func, loop = false) {
-        if (frames == null) this._waitSch = undefined
-        else if (!this._waitSch) {
-            this._waitSch = 0
-            this._waitFrames = frames
-            this._waitFunc = func
-            this._waitLoop = loop
+    click() {
+        if (this._mgm.mouse && this._mgm.mouse.down)
+            return this.contactXY(this._mgm.mouse.x, this._mgm.mouse.y)
+        if (this._mgm.touch && this._mgm.touch.down)
+            return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
+    }
+
+    wait(name, frames, func, loop = false) { // waits?
+        if (frames == null) delete this._wait[name]
+        else {
+            if (!this._wait[name]) {
+                this._wait[name] = {}
+                this._wait[name].sch = 0
+                if (loop) func()
+            }
+            const wait = this._wait[name]
+            wait.frames = frames
+            wait.func = func
+            wait.loop = loop
         }
     }
 
-    _waitWork() {
-        if (this._waitSch !== undefined) {
-            if (this._waitSch == this._waitFrames) {
-                this._waitFunc()
-                if (this._waitLoop) this._waitSch = 0
-                else this._waitSch = undefined
-            } else this._waitSch++
+    _waitsWork() {
+        for (const j in this._wait) {
+            const wait = this._wait[j]
+            if (wait.sch == wait.frames) {
+                wait.func()
+                if (wait.loop) wait.sch = 0
+                else delete this._wait[j]
+            } else wait.sch++
         }
     }
 }
