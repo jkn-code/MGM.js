@@ -22,17 +22,6 @@ class MGM {
             for (const j in this.prm.vars)
                 this[j] = this.prm.vars[j]
 
-        if (this.prm.scripts) {
-            this.prm.scripts.forEach(script => {
-                const s = document.createElement('script')
-                document.head.appendChild(s)
-                s.src = script
-                s.onload = () => {
-                    console.log('ok ' + script);
-                }
-            })
-        }
-
         window.onload = () => this._loadResourses()
     }
 
@@ -339,7 +328,6 @@ class MGM {
                     th._getHtmlBorders()
                 }
             }
-
             this._crtHtmlId(chel[i])
         }
     }
@@ -433,17 +421,15 @@ class MGM {
                 btn.y2 = top + cpos.height
             })
         }
-        if (this.mouse) {
-            this._htmls.forEach(ht => {
-                const cpos = ht.el.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
-                ht.x1 = left
-                ht.y1 = top
-                ht.x2 = left + cpos.width
-                ht.y2 = top + cpos.height
-            })
-        }
+        if (this._htmls) this._htmls.forEach(ht => {
+            const cpos = ht.el.getBoundingClientRect()
+            const left = cpos.left - this.plane.cpos.left
+            const top = cpos.top - this.plane.cpos.top
+            ht.x1 = left
+            ht.y1 = top
+            ht.x2 = left + cpos.width
+            ht.y2 = top + cpos.height
+        })
     }
 
     _firstV(m) {
@@ -519,7 +505,7 @@ class MGM {
                 })
 
                 this._htmls.forEach(ht => {
-                    if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2)
+                    if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2) 
                         html = true
                 })
             }
@@ -542,16 +528,19 @@ class MGM {
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-        for (const v of this.zList)
-            for (const e of this.objects)
-                if (v == e.z) {
-                    e._update()
-                    if (!e._toDel) e._draw()
+        for (const z of this.zList)
+            for (const obj of this.objects)
+                if (z == obj.z) {
+                    obj._update()
+                    if (!obj._toDel) obj._draw()
                 }
 
         let i = 0
-        for (let v of this.objects) {
-            if (v._toDel) this.objects.splice(i, 1)
+        for (let obj of this.objects) {
+            if (obj._toDel) {
+                obj.active = false
+                this.objects.splice(i, 1)
+            }
             i++
         }
 
@@ -605,6 +594,13 @@ class MGM {
 
 
 
+    loadScript(url) {
+        if (!url) return
+        const s = document.createElement('script')
+        document.head.appendChild(s)
+        s.src = url
+        s.onload = () => console.log('load ' + url)
+    }
 
     console(txt) {
         if (typeof txt == 'object') this._consoleTxt = JSON.stringify(txt)
@@ -689,24 +685,21 @@ class MGM {
         }
     }
 
-    getObj(name) {
-        for (const v of this.objects)
-            if (v.active !== false && v.name == name)
-                return v
-
-        return null
+    getObj(prm, key = 'name') {
+        for (const obj of this.objects)
+            if (obj.active !== false && obj[key] == prm)
+                return obj
     }
 
-    getObjs(name) {
+    getObjs(prm, key = 'name') {
         let ot = []
-        for (const v of this.objects)
-            if (v.active !== false) {
-                if (name && v.name == name) ot.push(v)
-                if (!name) ot.push(v)
-            }
+
+        for (const obj of this.objects)
+            if (obj.active !== false)
+                if (!prm) ot.push(obj)
+                else if (obj[key] == prm) ot.push(obj)
 
         if (ot.length > 0) return ot
-        return null
     }
 
     getStep(angle, dist) {
@@ -1404,6 +1397,14 @@ class MGMObject {
                 if (wait.loop) wait.sch = 0
                 else delete this._wait[j]
             } else wait.sch++
+        }
+    }
+
+    getStep(angle, dist) {
+        const coord = this._mgm.getStep(angle, dist)
+        return {
+            x: this.x + coord.x,
+            y: this.y + coord.y,
         }
     }
 }
