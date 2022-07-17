@@ -102,6 +102,13 @@ class MGM {
         this.frame = 0
         this.camera = { x: 0, y: 0 }
 
+        // BORDERS
+        if (this.prm.borders) {
+            this.prm.borders = this.prm.borders.split(',')
+            if (this.prm.borders[0]) this.prm.borders[0] = this.prm.borders[0].trim()
+            if (this.prm.borders[1]) this.prm.borders[1] = this.prm.borders[1].trim()
+        }
+
         // console.log(this);
 
         // CREATE CANVAS & PLANE
@@ -505,7 +512,7 @@ class MGM {
                 })
 
                 this._htmls.forEach(ht => {
-                    if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2) 
+                    if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2)
                         html = true
                 })
             }
@@ -617,7 +624,6 @@ class MGM {
     }
 
     stop(txt) {
-        if (this.isMobile) this._toggleFullScreen()
         console.log('stop');
         this.RUN = false
         this.STOP = true
@@ -679,6 +685,7 @@ class MGM {
         if (!this.object[prm.name]) return
         if (this.objects.length < 10000) {
             prm._mgm = this
+            if (prm.active !== false) prm.active = true
             const obj = new MGMObject(prm)
             this.objects.push(obj)
             return obj
@@ -784,8 +791,8 @@ class MGMObject {
 
         this._mgm.names[this.name] = this
 
-        if (this.border) {
-            if (typeof this.border == 'string') this.border = this.border.split(',')
+        if (this.border && typeof this.border == 'string') {
+            this.border = this.border.split(',')
             if (this.border[0]) this.border[0] = this.border[0].trim()
             if (this.border[1]) this.border[1] = this.border[1].trim()
         }
@@ -876,8 +883,14 @@ class MGMObject {
                     vy = this.collider.bottom - obj.collider.top
 
                 if (vx != 0 || vy != 0) {
-                    if (Math.abs(vx) < Math.abs(vy) || vy == 0) this.x -= vx
-                    if (Math.abs(vx) > Math.abs(vy) || vx == 0) this.y -= vy
+                    if (Math.abs(vx) < Math.abs(vy) || vy == 0) {
+                        this.x -= vx
+                        // this.gravVel = 0
+                    }
+                    if (Math.abs(vx) > Math.abs(vy) || vx == 0) {
+                        this.y -= vy
+                        this.gravVel = 0
+                    }
                 }
             }
             if (this.x + this.collider._pivotXR - 1 > obj.collider.left + 1 &&
@@ -923,7 +936,8 @@ class MGMObject {
         this._drawPrimitives(1) // relative
         this._mgm.context.restore()
 
-        if (this.border) this._boardsShow()
+        if (this.border) this._boardsShow(this.border)
+        if (this._mgm.prm.borders) this._boardsShow(this._mgm.prm.borders)
     }
 
     _dot(x, y, col = '#ff0') {
@@ -931,7 +945,7 @@ class MGMObject {
         this._mgm.context.fillRect(x - 1, y - 1, 3, 3)
     }
 
-    _boardsShow() {
+    _boardsShow(border) {
         const left = this.collider.left + this._mgm.canvCX + this._cameraZXm
         const right = this.collider.right + this._mgm.canvCX + this._cameraZXm
         const top = -this.collider.top + this._mgm.canvCY + this._camersZYm
@@ -940,15 +954,15 @@ class MGMObject {
         this._dot(this.x + this._mgm.canvCX + this._cameraZXm,
             -this.y + this._mgm.canvCY + this._camersZYm)
 
-        if (this.border[0] == 'dots') {
-            this._dot(left, top, this.border[1])
-            this._dot(right, top, this.border[1])
-            this._dot(left, bottom, this.border[1])
-            this._dot(right, bottom, this.border[1])
+        if (border[0] == 'dots') {
+            this._dot(left, top, border[1])
+            this._dot(right, top, border[1])
+            this._dot(left, bottom, border[1])
+            this._dot(right, bottom, border[1])
         }
-        if (this.border[0] == 'line') {
+        if (border[0] == 'line') {
             this._mgm.context.beginPath()
-            this._mgm.context.strokeStyle = this.border[1]
+            this._mgm.context.strokeStyle = border[1]
             this._mgm.context.moveTo(left, top)
             this._mgm.context.lineTo(right, top)
             this._mgm.context.lineTo(right, bottom)
@@ -1082,6 +1096,10 @@ class MGMObject {
             this._mgm.context.stroke()
         }
     }
+
+
+
+
 
     step(speed) {
         const rad = -this.angle * Math.PI / 180;
@@ -1362,7 +1380,7 @@ class MGMObject {
         if (this.active === false) {
             if (!prm) prm = {}
             prm.name = this.name
-            prm.active = true
+            if (prm.active !== false) prm.active = true
             return this._mgm.clone(prm)
         }
     }
@@ -1379,13 +1397,13 @@ class MGMObject {
         else {
             if (!this._wait[name]) {
                 this._wait[name] = {}
-                this._wait[name].sch = 0
+                const wait = this._wait[name]
+                wait.sch = 0
+                wait.frames = frames
+                wait.func = func
+                wait.loop = loop
                 if (loop) func()
             }
-            const wait = this._wait[name]
-            wait.frames = frames
-            wait.func = func
-            wait.loop = loop
         }
     }
 
