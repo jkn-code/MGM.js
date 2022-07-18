@@ -54,7 +54,7 @@ Download the latest version of **MGM.js**. Place it in the folder where you plan
 ```
 ____
 
-[MGM class parameters](instruction/MGM-class-parameters.md)
+<!-- [MGM class parameters](instruction/MGM-class-parameters.md)
 
 [MGM class variables](instruction/MGM-class-variables.md)
 
@@ -62,7 +62,7 @@ ____
 
 [Mgm object parameters](instruction/Mgm-object-parameters.md)
 
-[Mgm object methods](instruction/Mgm-object-methods.md)
+[Mgm object methods](instruction/Mgm-object-methods.md) -->
 
 # Donate
 
