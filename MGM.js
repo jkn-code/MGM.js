@@ -1392,7 +1392,7 @@ class MGMObject {
             return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
     }
 
-    wait(name, frames, func, loop = false) { // waits?
+    wait(name, frames, func) {
         if (frames == null) delete this._wait[name]
         else {
             if (!this._wait[name]) {
@@ -1400,9 +1400,23 @@ class MGMObject {
                 const wait = this._wait[name]
                 wait.sch = 0
                 wait.frames = frames
+                wait.repeat = false
                 wait.func = func
-                wait.loop = loop
-                if (loop) func()
+            }
+        }
+    }
+
+    repeat(name, frames, func) { 
+        if (frames == null) delete this._wait[name]
+        else {
+            if (!this._wait[name]) {
+                this._wait[name] = {}
+                const wait = this._wait[name]
+                wait.sch = 0
+                wait.frames = frames
+                wait.repeat = true
+                wait.func = func
+                func()
             }
         }
     }
@@ -1412,7 +1426,7 @@ class MGMObject {
             const wait = this._wait[j]
             if (wait.sch == wait.frames) {
                 wait.func()
-                if (wait.loop) wait.sch = 0
+                if (wait.repeat) wait.sch = 0
                 else delete this._wait[j]
             } else wait.sch++
         }
