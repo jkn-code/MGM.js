@@ -34,8 +34,6 @@ class MGM {
             viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
             document.head.appendChild(viewPortTag)
 
-            
-            // document.body.style.cssText = 'display: flex; align-items: center; justify-content: center; margin: 0;'
             document.body.style.backgroundColor = this.prm.bgPage || '#eee'
             document.body.style.fontFamily = this.prm.fontFamily || 'Tahoma';
             document.body.style.color = this.prm.fontColor || '#555'
@@ -62,12 +60,10 @@ class MGM {
             this.curtain = document.createElement('div')
             document.body.appendChild(this.curtain)
             this.curtain.classList.add('mgm-curtain')
-            this.curtain.style.cssText = 'position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer;' 
-            + 'display: flex; align-items: center; justify-content: center;'
-            // this.curtain.style.cssText = 'height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer; display: flex; align-items: center; justify-content: center;'
+            this.curtain.style.cssText = 'position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer;'
+                + 'display: flex; align-items: center; justify-content: center;'
             this.curtainIn = document.createElement('div')
             this.curtain.appendChild(this.curtainIn)
-            // this.curtainIn.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center;'
             this.curtainIn.style.cssText = 'text-align: center;'
             this.curtainIn.innerHTML = 'Loading'
         }
@@ -140,7 +136,6 @@ class MGM {
 
             this.plane = document.createElement('div')
             this.plane.classList.add('mgm-plane')
-            // this.plane.style.position = 'absolute'
             this.plane.style.cssText = 'display: flex; align-items: center; justify-content: center; position: absolute;'
             document.body.appendChild(this.plane)
 
@@ -379,13 +374,6 @@ class MGM {
 
         let w = 0, h = 0
 
-        if (innerWidth < innerHeight) { // if mobile v screen
-            // this.canvas.style.top = '0px'
-            // this.canvas.style.transform = 'translate(-50%, 0%)'
-        } else {
-            // this.canvas.style.top = '50%'
-            // this.canvas.style.transform = 'translate(-50%, -50%)'
-        }
         h = innerHeight
         w = innerHeight * this.prm.ratio
         if (w > innerWidth) {
@@ -481,7 +469,7 @@ class MGM {
             this.curtain.style.display = 'none'
             if (this.prm.cursor === false) this.plane.style.cursor = 'none'
             this.objects = []
-            this.nowheres = []
+            this._nowhere = []
             this.RUN = true
             this.zList = []
             this.objectsId = 0
@@ -493,14 +481,14 @@ class MGM {
         this.context.font = '20px Tahoma'// dont work in _init (?)
         for (const j in this.object) {
             this.object[j].name = j
-            if (this.object[j].nowhere) this.nowheres.push(new MGMObject({ name: j, _mgm: this }))
+            if (this.object[j].nowhere) this._nowhere.push(new MGMObject({ name: j, _mgm: this }))
             else this.objects.push(new MGMObject({ name: j, _mgm: this }))
         }
 
         for (const obj of this.objects)
             if (obj.awake) obj.awake(obj)
 
-        for (const obj of this.nowheres)
+        for (const obj of this._nowhere)
             if (obj.awake) obj.awake(obj)
 
         this._loop()
@@ -557,26 +545,13 @@ class MGM {
 
 
         for (const z of this.zList) {
-            // let i = 0
-            for (let obj of this.objects) {
+            for (let obj of this.objects)
                 if (z == obj.z)
                     obj._draw()
-                // if (obj._toDel) {
-                //     obj.active = false
-                //     this.objects.splice(i, 1)
-                // }
-                // i++
-            }
-            // i = 0
-            for (let obj of this.nowheres) {
+
+            for (let obj of this._nowhere)
                 if (z == obj.z)
                     obj._draw()
-                // if (obj._toDel) {
-                //     obj.active = false
-                //     this.nowheres.splice(i, 1)
-                // }
-                // i++
-            }
         }
 
         let i = 0
@@ -592,8 +567,9 @@ class MGM {
             }
             i++
         }
+
         i = 0
-        for (const obj of this.nowheres) {
+        for (const obj of this._nowhere) {
             if (obj._goStart && obj.start) {
                 obj.start(obj)
                 delete obj._goStart
@@ -605,12 +581,6 @@ class MGM {
             }
             i++
         }
-
-        // for (const obj of this.objects)
-        //     obj._update()
-
-        // for (const obj of this.nowheres)
-        //     obj._update()
 
         if (this._consoleTxt) {
             if (this._consoleTxt != '') {
@@ -754,7 +724,7 @@ class MGM {
             prm._mgm = this
             if (prm.active !== false) prm.active = true
             const obj = new MGMObject(prm)
-            if (obj.nowhere) this.nowheres.push(obj)
+            if (obj.nowhere) this._nowhere.push(obj)
             else this.objects.push(obj)
             return obj
         }
@@ -900,7 +870,6 @@ class MGMObject {
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 0
-            // if (!this.gravVel) this.gravVel = -1
             if (this.onGround === undefined) this.onGround = false
         }
 
@@ -923,16 +892,10 @@ class MGMObject {
         if (this.flipYV == undefined) this.flipYV = 1
 
         if (this.width) this._prmWidth = this.width
-        // else this.width = 1
         if (this.height) this._prmHeight = this.height
-        // else this.height = 1
 
         this._wait = {}
-
-        // console.log(this);
-        // console.log(this._mgm.canvCX);
         this._goStart = true
-        // if (this.start) this.start(this)
         // this._classInf()
     }
 
@@ -952,25 +915,6 @@ class MGMObject {
         }
 
         this._pic = this._getPic()
-
-        // if (this.width) this._prmWidth = this.width
-        // if (this.width) this._prmHeight = this.width
-
-        // if (!this._pic) {
-        //     if (!this._prmWidth) this._prmWidth = 1
-        //     if (!this._prmHeight) this._prmHeight = 1
-        // }
-
-
-        // if (!this.width) this.width = this._pic.width
-        // if (!this.height) this.height = this._pic.height
-
-        // if (!this.width)
-        //     if (this._prmWidth) this.width = this._prmWidth
-        //     else this.width = this._pic.width
-        // if (!this.height)
-        //     if (this._prmHeight) this.height = this._prmHeight
-        //     else this.height = this._pic.height
 
         if (this._pic) {
             if (!this._prmWidth) this.width = this._pic.width
@@ -1010,12 +954,11 @@ class MGMObject {
 
     _physicWork() {
         if (!this.physics) return
-        // if (this.physics > 1)
+
         if (this.physics == 'unit') {
             let nextX = 0
             let nextY = 0
             this.onGround = false
-            // for (const obj of this._mgm.objects) if (obj.physics == 1) {
             for (const obj of this._mgm.objects) if (obj.physics == 'wall') {
                 if (this.collider.right > obj.collider.left &&
                     this.collider.left < obj.collider.right &&
@@ -1034,32 +977,17 @@ class MGMObject {
                         vy = this.collider.bottom - obj.collider.top
 
                     if (vx != 0 || vy != 0) {
-                        if (Math.abs(vx) < Math.abs(vy) || vy == 0) {
-                            // if (this.vx < nextX) 
+                        if (Math.abs(vx) < Math.abs(vy) || vy == 0)
                             nextX = vx
-                            // console.log(vx, nextX);
-                            // this.x -= vx
-                            // ** this.gravVel = 0
-                        }
+
                         if (Math.abs(vx) > Math.abs(vy) || vx == 0) {
                             nextY = vy
-                            // this.y -= vy
                             this.gravVel = 0
                         }
                     }
                 }
-                // if (this.x + this.collider._pivotXR - 1 > obj.collider.left + 1 &&
-                //     this.x - this.collider._pivotXL + 1 < obj.collider.right - 1 &&
-                //     this.y + this.collider._pivotYT > obj.collider.bottom &&
-                //     this.y - this.collider._pivotYB - 1 < obj.collider.top
-                // ) {
-                //     this.onGround = true
-                //     // console.log('a');
-                //     this.gravVel = 0
-                //     // this.gravVel = -1
-                // }
             }
-            // console.log(nextX);
+
             this.x -= nextX
             this.y -= nextY
             for (const obj of this._mgm.objects) if (obj.physics == 'wall') {
@@ -1067,11 +995,7 @@ class MGMObject {
                     this.x - this.collider._pivotXL < obj.collider.right &&
                     this.y + this.collider._pivotYT > obj.collider.bottom &&
                     this.y - this.collider._pivotYB - 1 < obj.collider.top
-                ) {
-                    this.onGround = true
-                    // this.gravVel = 0
-                    // this.gravVel = -1
-                }
+                ) this.onGround = true
             }
         }
     }
@@ -1234,8 +1158,6 @@ class MGMObject {
         this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         this._mgm.context.arc(prm.x, -prm.y,
-            // prm.x + this.width * this.pivotX, 
-            // -prm.y - this.height * this.pivotY, 
             prm.radius, 0, 2 * Math.PI)
         if (prm.fillColor && prm.fillColor != '') {
             this._mgm.context.fillStyle = prm.fillColor
@@ -1350,7 +1272,7 @@ class MGMObject {
     contactObj(obj) {
         if (obj.active !== false &&
             !obj.hidden &&
-            // !obj.nowhere &&
+            // !obj.nowhere && // ?
             this.collider.top > obj.collider.bottom &&
             this.collider.bottom < obj.collider.top &&
             this.collider.right > obj.collider.left &&
@@ -1359,10 +1281,6 @@ class MGMObject {
 
     contact(prm, key = 'name') {
         let ot, res
-
-        // for (const obj of this._mgm.objects)
-        //     if (obj[key] == prm)
-        //         if (ot = this.contactObj(obj)) break
 
         for (const obj of this._mgm.objects)
             if (res = this.contactObj(obj))
@@ -1379,33 +1297,22 @@ class MGMObject {
         const ot = []
         let res
 
-        // for (const obj of this._mgm.objects) {
-        //     let ok = true
-        //     if (obj == this) ok = false
-        //     if (prm && obj[key] != prm) ok = false
-        //     if (ok)
-        //         if (ot = this.contactObj(obj))
-        //             mas.push(ot)
-        // }
-
         for (const obj of this._mgm.objects)
             if (obj != this)
                 if (res = this.contactObj(obj))
                     mas.push(res)
 
         if (prm)
-            for (const obj of mas) //console.log(obj[key] +"|"+ prm);
+            for (const obj of mas) 
                 if (obj[key] == prm) ot.push(obj)
 
-        // console.log(ot, mas);
         if (ot.length > 0) return ot
-        // if (mas.length > 0) return mas
     }
 
     contactObjIn(obj) {
         if (obj.active !== false &&
             !obj.hidden &&
-            // !obj.nowhere &&
+            // !obj.nowhere && // ?
             this.collider.bottom > obj.collider.bottom &&
             this.collider.top < obj.collider.top &&
             this.collider.left > obj.collider.left &&
@@ -1414,10 +1321,6 @@ class MGMObject {
 
     contactIn(prm, key = 'name') {
         let ot = null
-
-        // for (const obj of this._mgm.objects)
-        //     if (obj[key] == prm)
-        //         if (ot = this.contactObjIn(obj)) break
 
         for (const obj of this._mgm.objects)
             if (this.contactObjIn(obj))
@@ -1434,17 +1337,6 @@ class MGMObject {
         const ot = []
         let res
 
-        // for (const obj of this._mgm.objects) {
-        //     let ok = true
-        //     if (obj == this) ok = false
-        //     if (prm && obj[key] != prm) ok = false
-        //     if (ok)
-        //         if (ot = this.contactObjIn(obj))
-        //             mas.push(ot)
-        // }
-
-        // if (mas.length > 0) return mas
-
         for (const obj of this._mgm.objects)
             if (obj != this)
                 if (res = this.contactObjIn(obj))
@@ -1454,7 +1346,6 @@ class MGMObject {
             for (const obj of mas)
                 if (obj[key] == prm) ot.push(obj)
 
-        // console.log(ot, mas);
         if (ot.length > 0) return ot
     }
 
@@ -1621,11 +1512,7 @@ class MGMObject {
         }
     }
 
-<<<<<<< HEAD
     repeat(name, frames, func) {
-=======
-    repeat(name, frames, func) { 
->>>>>>> 553c1ac288ebeb0b92eca7fe232a7b51320df0e0
         if (frames == null) delete this._wait[name]
         else {
             if (!this._wait[name]) {
