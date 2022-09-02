@@ -8,11 +8,6 @@ class MGM {
         this._loadPage()
     }
 
-    _classInf() {
-        // console.log(Object.getOwnPropertyNames(this));
-        // console.log(Object.getOwnPropertyNames(this.__proto__));
-    }
-
     _loadPage() {
         this.object = {}
         this.names = {}
@@ -34,16 +29,27 @@ class MGM {
             viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
             document.head.appendChild(viewPortTag)
 
-            document.body.style.backgroundColor = this.params.bgPage || '#eee'
-            document.body.style.fontFamily = this.params.fontFamily || 'Tahoma';
-            document.body.style.color = this.params.fontColor || '#555'
+            document.body.style.backgroundColor = this.params.bodyColor || '#eee'
+            document.body.style.fontFamily = this.params.textFont || 'Tahoma';
+            document.body.style.color = this.params.textColor || '#555'
             document.body.style.overflow = 'hidden'
             document.body.style.userSelect = 'none'
             document.body.style.fontSize = 'none'
             document.body.style.margin = '0'
 
             this._consDiv = document.createElement('div')
-            this._consDiv.style.cssText = `position: absolute; z-index: 999; top: 0px; left: 0px; max-height: 50vh; width: 50vw; overflow-y: auto; opacity: 1; display: none; font-size: 11px; word-wrap: break-word;`
+            this._consDiv.style.cssText = `
+                position: absolute; 
+                z-index: 999; 
+                top: 0px; 
+                left: 0px; 
+                max-height: 50vh; 
+                width: 50vw; 
+                overflow-y: auto; 
+                opacity: 1; 
+                display: none; 
+                font-size: 11px; 
+                word-wrap: break-word;`
             document.body.appendChild(this._consDiv)
 
             if (this.params.icon) {
@@ -60,8 +66,18 @@ class MGM {
             this.curtain = document.createElement('div')
             document.body.appendChild(this.curtain)
             this.curtain.classList.add('mgm-curtain')
-            this.curtain.style.cssText = 'position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer;'
-                + 'display: flex; align-items: center; justify-content: center;'
+            this.curtain.style.cssText = `
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                height: 100vh; 
+                width: 100vw; 
+                background: ` + document.body.style.backgroundColor + `; 
+                z-index: 999; 
+                cursor: pointer;
+                display: flex; 
+                align-items: center; 
+                justify-content: center;`
             this.curtainIn = document.createElement('div')
             this.curtain.appendChild(this.curtainIn)
             this.curtainIn.style.cssText = 'text-align: center;'
@@ -114,8 +130,6 @@ class MGM {
             if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
         }
 
-        // console.log(this);
-
         // CREATE CANVAS & PLANE
         {
             this.canvas = document.createElement('canvas')
@@ -131,7 +145,7 @@ class MGM {
             }
             this.context = this.canvas.getContext('2d')
             this.context.font = '48px serif'
-            this.canvas.style.backgroundColor = this.params.bgCanvas || '#fff'
+            if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
             document.body.appendChild(this.canvas)
 
             this.plane = document.createElement('div')
@@ -328,7 +342,6 @@ class MGM {
 
     }
 
-
     _crtHtmlId(el) {
         let chel = el.childNodes
         let th = this
@@ -439,6 +452,11 @@ class MGM {
             ht.x2 = left + cpos.width
             ht.y2 = top + cpos.height
         })
+    }
+
+    _classInf() {
+        // console.log(Object.getOwnPropertyNames(this));
+        // console.log(Object.getOwnPropertyNames(this.__proto__));
     }
 
     _firstV(m) {
@@ -830,11 +848,6 @@ class MGMObject {
         this._init()
     }
 
-    _classInf() {
-        // console.log(Object.getOwnPropertyNames(this));
-        // console.log(Object.getOwnPropertyNames(this.__proto__));
-    }
-
     _init() {
         // console.log(this);
 
@@ -895,6 +908,11 @@ class MGMObject {
         this._wait = {}
         this._goStart = true
         // this._classInf()
+    }
+
+    _classInf() {
+        // console.log(Object.getOwnPropertyNames(this));
+        // console.log(Object.getOwnPropertyNames(this.__proto__));
     }
 
     _update() {
