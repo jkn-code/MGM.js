@@ -18,9 +18,9 @@ class MGM {
         this.names = {}
         this._build = {}
 
-        if (this.prm.vars)
-            for (const j in this.prm.vars)
-                this[j] = this.prm.vars[j]
+        if (this.prm.var)
+            for (const j in this.prm.var)
+                this[j] = this.prm.var[j]
 
         window.onload = () => this._loadResourses()
     }
@@ -34,10 +34,15 @@ class MGM {
             viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
             document.head.appendChild(viewPortTag)
 
+            
+            // document.body.style.cssText = 'display: flex; align-items: center; justify-content: center; margin: 0;'
             document.body.style.backgroundColor = this.prm.bgPage || '#eee'
             document.body.style.fontFamily = this.prm.fontFamily || 'Tahoma';
             document.body.style.color = this.prm.fontColor || '#555'
             document.body.style.overflow = 'hidden'
+            document.body.style.userSelect = 'none'
+            document.body.style.fontSize = 'none'
+            document.body.style.margin = '0'
 
             this._consDiv = document.createElement('div')
             this._consDiv.style.cssText = `position: absolute; z-index: 999; top: 0px; left: 0px; max-height: 50vh; width: 50vw; overflow-y: auto; opacity: 1; display: none; font-size: 11px; word-wrap: break-word;`
@@ -56,11 +61,15 @@ class MGM {
 
             this.curtain = document.createElement('div')
             document.body.appendChild(this.curtain)
-            this.curtain.style.cssText = 'position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer;'
+            this.curtain.classList.add('mgm-curtain')
+            this.curtain.style.cssText = 'position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer;' 
+            + 'display: flex; align-items: center; justify-content: center;'
+            // this.curtain.style.cssText = 'height: 100vh; width: 100vw; background: ' + document.body.style.backgroundColor + '; z-index: 999; cursor: pointer; display: flex; align-items: center; justify-content: center;'
             this.curtainIn = document.createElement('div')
             this.curtain.appendChild(this.curtainIn)
-            this.curtainIn.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center;'
-            this.curtainIn.innerHTML = 'Загрузка'
+            // this.curtainIn.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center;'
+            this.curtainIn.style.cssText = 'text-align: center;'
+            this.curtainIn.innerHTML = 'Loading'
         }
 
 
@@ -87,7 +96,7 @@ class MGM {
 
 
             let loadWait = setInterval(() => {
-                this.curtainIn.innerHTML = 'Загрузка<br><br>' + this._build.resLoad + " / " + this._build.resAll
+                this.curtainIn.innerHTML = 'Loading<br><br>' + this._build.resLoad + " / " + this._build.resAll
                 if (this._build.resAll == this._build.resLoad) {
                     clearInterval(loadWait)
                     // console.log('load ok');
@@ -114,7 +123,9 @@ class MGM {
         // CREATE CANVAS & PLANE
         {
             this.canvas = document.createElement('canvas')
+            this.canvas.classList.add('mgm-canvas')
             this.canvas.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);`
+            // image-rendering: pixelated;
             this._defaultContext = {
                 textAlign: 'left',
                 fontColor: '#000',
@@ -128,7 +139,9 @@ class MGM {
             document.body.appendChild(this.canvas)
 
             this.plane = document.createElement('div')
-            this.plane.style.position = 'absolute'
+            this.plane.classList.add('mgm-plane')
+            // this.plane.style.position = 'absolute'
+            this.plane.style.cssText = 'display: flex; align-items: center; justify-content: center; position: absolute;'
             document.body.appendChild(this.plane)
 
             this._resizeWin()
@@ -193,7 +206,8 @@ class MGM {
 
             const color = this.prm.mobileColor || 'gray'
             const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 5;'
-            const control = this.prm.mobileControl || 'stickL, br1, br2, br3, br4'
+            let control = this.prm.mobileControl || 'stickL, br1, br2, br3, br4'
+            if (this.prm.mobileControl === false) control = ''
             let cm = control.split(',')
             cm.forEach(c => {
                 const name = c.trim()
@@ -361,15 +375,16 @@ class MGM {
 
     _resizeWin() {
         this.prm.ratio = this.prm.ratio || 1
+        if (this.prm.ratio == 'auto') this.prm.ratio = innerWidth / innerHeight
 
         let w = 0, h = 0
 
         if (innerWidth < innerHeight) { // if mobile v screen
-            this.canvas.style.top = '0px'
-            this.canvas.style.transform = 'translate(-50%, 0%)'
+            // this.canvas.style.top = '0px'
+            // this.canvas.style.transform = 'translate(-50%, 0%)'
         } else {
-            this.canvas.style.top = '50%'
-            this.canvas.style.transform = 'translate(-50%, -50%)'
+            // this.canvas.style.top = '50%'
+            // this.canvas.style.transform = 'translate(-50%, -50%)'
         }
         h = innerHeight
         w = innerHeight * this.prm.ratio
@@ -395,12 +410,11 @@ class MGM {
         this.plane.style.height = cpos.height + 'px'
 
         this.curtain.style.top = cpos.top + 'px'
-        this.curtain.style.left = cpos.left + 'px'
-        this.curtain.style.width = cpos.width + 'px'
+        this.curtain.style.left = (cpos.left - 1) + 'px'
+        this.curtain.style.width = (cpos.width + 1) + 'px'
         this.curtain.style.height = cpos.height + 'px'
 
-        // console.log(w / 50);
-        document.body.style.fontSize = this.prm.fontSize || (w / 50) + 'px'
+        document.body.style.fontSize = this.prm.fontSize || (h / 20) + 'px'
 
         this._getHtmlBorders()
     }
@@ -453,11 +467,11 @@ class MGM {
         if (!this.prm.platform) this.prm.platform = 'pc'
         this.prm.platform = this.prm.platform.split(',')
         if (this.isMobile && this.prm.platform.indexOf('mobile') == -1) {
-            alert('Мобильное использование отключено')
+            alert('Mobile usage disabled')
             ok = false
         }
         if (!this.isMobile && this.prm.platform.indexOf('pc') == -1) {
-            alert('Использование на ПК отключено')
+            alert('Use on PC disabled')
             ok = false
         }
 
@@ -467,8 +481,10 @@ class MGM {
             this.curtain.style.display = 'none'
             if (this.prm.cursor === false) this.plane.style.cursor = 'none'
             this.objects = []
+            this.nowheres = []
             this.RUN = true
             this.zList = []
+            this.objectsId = 0
             setTimeout(() => this._crtObjs(), 0)
         }
     }
@@ -477,11 +493,15 @@ class MGM {
         this.context.font = '20px Tahoma'// dont work in _init (?)
         for (const j in this.object) {
             this.object[j].name = j
-            this.objects.push(new MGMObject({ name: j, _mgm: this }))
+            if (this.object[j].nowhere) this.nowheres.push(new MGMObject({ name: j, _mgm: this }))
+            else this.objects.push(new MGMObject({ name: j, _mgm: this }))
         }
 
-        for (const v of this.objects)
-            if (v.awake) v.awake(v)
+        for (const obj of this.objects)
+            if (obj.awake) obj.awake(obj)
+
+        for (const obj of this.nowheres)
+            if (obj.awake) obj.awake(obj)
 
         this._loop()
     }
@@ -535,22 +555,62 @@ class MGM {
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-        for (const z of this.zList)
-            for (const obj of this.objects)
-                if (z == obj.z) {
-                    obj._update()
-                    if (!obj._toDel) obj._draw()
-                }
+
+        for (const z of this.zList) {
+            // let i = 0
+            for (let obj of this.objects) {
+                if (z == obj.z)
+                    obj._draw()
+                // if (obj._toDel) {
+                //     obj.active = false
+                //     this.objects.splice(i, 1)
+                // }
+                // i++
+            }
+            // i = 0
+            for (let obj of this.nowheres) {
+                if (z == obj.z)
+                    obj._draw()
+                // if (obj._toDel) {
+                //     obj.active = false
+                //     this.nowheres.splice(i, 1)
+                // }
+                // i++
+            }
+        }
 
         let i = 0
-        for (let obj of this.objects) {
-            if (obj._toDel) {
+        for (const obj of this.objects) {
+            if (obj._goStart && obj.start) {
+                obj.start(obj)
+                delete obj._goStart
+            }
+            if (!obj._toDel) obj._update()
+            else {
+                obj.active = false
+                this.objects.splice(i, 1)
+            }
+            i++
+        }
+        i = 0
+        for (const obj of this.nowheres) {
+            if (obj._goStart && obj.start) {
+                obj.start(obj)
+                delete obj._goStart
+            }
+            if (!obj._toDel) obj._update()
+            else {
                 obj.active = false
                 this.objects.splice(i, 1)
             }
             i++
         }
 
+        // for (const obj of this.objects)
+        //     obj._update()
+
+        // for (const obj of this.nowheres)
+        //     obj._update()
 
         if (this._consoleTxt) {
             if (this._consoleTxt != '') {
@@ -599,6 +659,13 @@ class MGM {
         }
     }
 
+    _objInArr(obj, arr) {
+        for (const a of arr)
+            if (a === obj) return true
+    }
+
+
+
 
 
     loadScript(url) {
@@ -628,8 +695,8 @@ class MGM {
         this.RUN = false
         this.STOP = true
         if (txt || this.prm.stopText) {
-            this.curtainIn.innerHTML = this.prm.stopText || txt || 'The end'
-            this.curtain.style.display = 'block'
+            this.curtainIn.innerHTML = txt || this.prm.stopText
+            this.curtain.style.display = 'flex'
         }
     }
 
@@ -683,11 +750,12 @@ class MGM {
 
     clone(prm) {
         if (!this.object[prm.name]) return
-        if (this.objects.length < 10000) {
+        if (this.objects.length < 100000) {
             prm._mgm = this
             if (prm.active !== false) prm.active = true
             const obj = new MGMObject(prm)
-            this.objects.push(obj)
+            if (obj.nowhere) this.nowheres.push(obj)
+            else this.objects.push(obj)
             return obj
         }
     }
@@ -716,7 +784,50 @@ class MGM {
             y: dist * Math.sin(rad)
         }
     }
+
+    printText(to, txt, speed = 30, cp) {
+        const m = txt.split(' ')
+        let i = 0
+        if (!cp) cp = ['.', '!', '?', ';']
+        word()
+        function word() {
+            let w = m[i]
+            let c = 0
+            const div = document.createElement('div')
+            div.style.display = 'inline-block'
+            div.innerHTML = w
+            to.appendChild(div)
+            const cpos = div.getBoundingClientRect()
+            div.style.width = cpos.width + 'px'
+            div.innerHTML = ' '
+            char()
+            i++
+            function char() {
+                let s = speed
+                if (cp.indexOf(w[c]) > -1) s *= 50
+                div.innerHTML += w[c]
+                c++
+                if (c < w.length) setTimeout(char, s)
+                else if (i < m.length) {
+                    to.innerHTML += ' '
+                    to.scroll({ top: 1000000 })
+                    setTimeout(word, s)
+                } else to.scroll({ top: 1000000 })
+            }
+        }
+    }
+
+    round(n, t) {
+        return Math.round(n * t) / t
+    }
 }
+
+
+
+
+
+
+
 
 
 
@@ -759,6 +870,9 @@ class MGMObject {
     _init() {
         // console.log(this);
 
+        this._mgm.objectsId++
+        this.objectId = this._mgm.objectsId
+
         if (!this.x) this.x = 0
         if (!this.y) this.y = 0
         if (!this.z) this.z = 0
@@ -785,7 +899,8 @@ class MGMObject {
         if (this.collider.y == undefined) this.collider.y = 0
 
         if (this.physics && this.mass) {
-            if (!this.gravVel) this.gravVel = 1
+            if (!this.gravVel) this.gravVel = 0
+            // if (!this.gravVel) this.gravVel = -1
             if (this.onGround === undefined) this.onGround = false
         }
 
@@ -804,16 +919,20 @@ class MGMObject {
             this.cameraZY = this.cameraZ
         }
 
-        if (this.flipXValue == undefined) this.flipXValue = 1
-        if (this.flipYValue == undefined) this.flipYValue = 1
+        if (this.flipXV == undefined) this.flipXV = 1
+        if (this.flipYV == undefined) this.flipYV = 1
 
         if (this.width) this._prmWidth = this.width
+        // else this.width = 1
         if (this.height) this._prmHeight = this.height
+        // else this.height = 1
 
         this._wait = {}
 
         // console.log(this);
-        if (this.start) this.start(this)
+        // console.log(this._mgm.canvCX);
+        this._goStart = true
+        // if (this.start) this.start(this)
         // this._classInf()
     }
 
@@ -832,29 +951,43 @@ class MGMObject {
             this._mgm.camera.y = this.y
         }
 
-        if (this.physics && this.mass) {
-            this.gravVel += 0.5
-            this.y -= this.mass * this.gravVel
-            this.onGround = false
-        }
-
         this._pic = this._getPic()
 
-        if (!this._pic) {
-            if (!this._prmWidth) this._prmWidth = 1
-            if (!this._prmHeight) this._prmHeight = 1
-        }
+        // if (this.width) this._prmWidth = this.width
+        // if (this.width) this._prmHeight = this.width
+
+        // if (!this._pic) {
+        //     if (!this._prmWidth) this._prmWidth = 1
+        //     if (!this._prmHeight) this._prmHeight = 1
+        // }
+
 
         // if (!this.width) this.width = this._pic.width
         // if (!this.height) this.height = this._pic.height
 
-        if (this._prmWidth) this.width = this._prmWidth
-        else this.width = this._pic.width
-        if (this._prmHeight) this.height = this._prmHeight
-        else this.height = this._pic.height
+        // if (!this.width)
+        //     if (this._prmWidth) this.width = this._prmWidth
+        //     else this.width = this._pic.width
+        // if (!this.height)
+        //     if (this._prmHeight) this.height = this._prmHeight
+        //     else this.height = this._pic.height
+
+        if (this._pic) {
+            if (!this._prmWidth) this.width = this._pic.width
+            if (!this._prmHeight) this.height = this._pic.height
+        } else {
+            if (!this.width) this.width = 1
+            if (!this.height) this.height = 1
+        }
 
         this._width = this.width * this.size
         this._height = this.height * this.size
+
+        if (this.physics && this.mass) {
+            if (!this.onGround) this.gravVel -= 0.5
+            this.y += this.mass * this.gravVel
+            this.onGround = false
+        }
 
         this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
         this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
@@ -865,55 +998,94 @@ class MGMObject {
         this.collider.top = this.y + this.collider._pivotYT
         this.collider.bottom = this.y - this.collider._pivotYB
 
-        if (this.physics > 0) for (const obj of this._mgm.objects) if (obj.physics == 1) {
-            if (this.collider.right > obj.collider.left &&
-                this.collider.left < obj.collider.right &&
-                this.collider.top > obj.collider.bottom &&
-                this.collider.bottom < obj.collider.top
-            ) {
-                let vx = 0, vy = 0
-
-                if (this.collider.right > obj.collider.left && this.collider.left < obj.collider.left)
-                    vx = this.collider.right - obj.collider.left
-                if (this.collider.left < obj.collider.right && this.collider.right > obj.collider.right)
-                    vx = this.collider.left - obj.collider.right
-                if (this.collider.top > obj.collider.bottom && this.collider.bottom < obj.collider.bottom)
-                    vy = this.collider.top - obj.collider.bottom
-                if (this.collider.bottom < obj.collider.top && this.collider.top > obj.collider.top)
-                    vy = this.collider.bottom - obj.collider.top
-
-                if (vx != 0 || vy != 0) {
-                    if (Math.abs(vx) < Math.abs(vy) || vy == 0) {
-                        this.x -= vx
-                        // this.gravVel = 0
-                    }
-                    if (Math.abs(vx) > Math.abs(vy) || vx == 0) {
-                        this.y -= vy
-                        this.gravVel = 0
-                    }
-                }
-            }
-            if (this.x + this.collider._pivotXR - 1 > obj.collider.left + 1 &&
-                this.x - this.collider._pivotXL + 1 < obj.collider.right - 1 &&
-                this.y + this.collider._pivotYT > obj.collider.bottom &&
-                this.y - this.collider._pivotYB - 1 < obj.collider.top
-            ) {
-                this.onGround = true
-                this.gravVel = 1
-            }
-        }
+        this._physicWork()
 
         if (this.flipX)
-            if (this.angle > -90 && this.angle < 90) this.flipXValue = 1
-            else this.flipXValue = -1
+            if (this.angle > -90 && this.angle < 90) this.flipXV = 1
+            else this.flipXV = -1
         if (this.flipY)
-            if (this.angle > 0) this.flipYValue = 1
-            else this.flipYValue = -1
+            if (this.angle > 0) this.flipYV = 1
+            else this.flipYV = -1
+    }
+
+    _physicWork() {
+        if (!this.physics) return
+        // if (this.physics > 1)
+        if (this.physics == 'unit') {
+            let nextX = 0
+            let nextY = 0
+            this.onGround = false
+            // for (const obj of this._mgm.objects) if (obj.physics == 1) {
+            for (const obj of this._mgm.objects) if (obj.physics == 'wall') {
+                if (this.collider.right > obj.collider.left &&
+                    this.collider.left < obj.collider.right &&
+                    this.collider.top > obj.collider.bottom &&
+                    this.collider.bottom < obj.collider.top
+                ) {
+                    let vx = 0, vy = 0
+
+                    if (this.collider.right > obj.collider.left && this.collider.left < obj.collider.left)
+                        vx = this.collider.right - obj.collider.left
+                    if (this.collider.left < obj.collider.right && this.collider.right > obj.collider.right)
+                        vx = this.collider.left - obj.collider.right
+                    if (this.collider.top > obj.collider.bottom && this.collider.bottom < obj.collider.bottom)
+                        vy = this.collider.top - obj.collider.bottom
+                    if (this.collider.bottom < obj.collider.top && this.collider.top > obj.collider.top)
+                        vy = this.collider.bottom - obj.collider.top
+
+                    if (vx != 0 || vy != 0) {
+                        if (Math.abs(vx) < Math.abs(vy) || vy == 0) {
+                            // if (this.vx < nextX) 
+                            nextX = vx
+                            // console.log(vx, nextX);
+                            // this.x -= vx
+                            // ** this.gravVel = 0
+                        }
+                        if (Math.abs(vx) > Math.abs(vy) || vx == 0) {
+                            nextY = vy
+                            // this.y -= vy
+                            this.gravVel = 0
+                        }
+                    }
+                }
+                // if (this.x + this.collider._pivotXR - 1 > obj.collider.left + 1 &&
+                //     this.x - this.collider._pivotXL + 1 < obj.collider.right - 1 &&
+                //     this.y + this.collider._pivotYT > obj.collider.bottom &&
+                //     this.y - this.collider._pivotYB - 1 < obj.collider.top
+                // ) {
+                //     this.onGround = true
+                //     // console.log('a');
+                //     this.gravVel = 0
+                //     // this.gravVel = -1
+                // }
+            }
+            // console.log(nextX);
+            this.x -= nextX
+            this.y -= nextY
+            for (const obj of this._mgm.objects) if (obj.physics == 'wall') {
+                if (this.x + this.collider._pivotXR > obj.collider.left &&
+                    this.x - this.collider._pivotXL < obj.collider.right &&
+                    this.y + this.collider._pivotYT > obj.collider.bottom &&
+                    this.y - this.collider._pivotYB - 1 < obj.collider.top
+                ) {
+                    this.onGround = true
+                    // this.gravVel = 0
+                    // this.gravVel = -1
+                }
+            }
+        }
     }
 
     _draw() {
         if (this.hidden) return
         if (this.active === false) return
+        if (this._toDel === false) return
+
+        if (this.collider.right < this._mgm.camera.x - this._mgm.canvCX ||
+            this.collider.left > this._mgm.camera.x + this._mgm.canvCX ||
+            this.collider.top < this._mgm.camera.y - this._mgm.canvCY ||
+            this.collider.bottom > this._mgm.camera.y + this._mgm.canvCY
+        ) return
 
         this._cameraZXm = - this._mgm.camera.x * this.cameraZX
         this._camersZYm = this._mgm.camera.y * this.cameraZY
@@ -927,7 +1099,7 @@ class MGMObject {
         if (this.alpha < 1) this._mgm.context.globalAlpha = this.alpha
         else this._mgm.context.globalAlpha = 1
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
-        this._mgm.context.scale(this.flipXValue, this.flipYValue)
+        this._mgm.context.scale(this.flipXV, this.flipYV)
         if (this.effect) this._mgm.context.filter = this.effect
         if (this._pic) this._mgm.context.drawImage(this._pic,
             -this._width / 2 + this._width * this.pivotX,
@@ -979,10 +1151,6 @@ class MGMObject {
     }
 
     _drawPrimitives(pos) {
-        if (this.drawText)
-            if (!Array.isArray(this.drawText)) this._drawTextFn(this.drawText, pos)
-            else for (const prm of this.drawText) this._drawTextFn(prm, pos)
-
         if (this.drawLine)
             if (!Array.isArray(this.drawLine)) this._drawLineFn(this.drawLine, pos)
             else for (const prm of this.drawLine) this._drawLineFn(prm, pos)
@@ -998,6 +1166,9 @@ class MGMObject {
         if (this.drawPolygon)
             if (!Array.isArray(this.drawPolygon)) this._drawPolygonFn(this.drawPolygon, pos)
             else for (const prm of this.drawPolygon) this._drawPolygonFn(prm, pos)
+        if (this.drawText)
+            if (!Array.isArray(this.drawText)) this._drawTextFn(this.drawText, pos)
+            else for (const prm of this.drawText) this._drawTextFn(prm, pos)
     }
 
     _drawTextFn(prm, pos) {
@@ -1025,7 +1196,7 @@ class MGMObject {
         if (!prm.y1) prm.y1 = 0
         if (!prm.x2) prm.x2 = 0
         if (!prm.y2) prm.y2 = 0
-        this._mgm.context.beginPath();
+        this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         this._mgm.context.lineWidth = prm.width || 1
         this._mgm.context.strokeStyle = prm.color || 'black'
@@ -1040,7 +1211,7 @@ class MGMObject {
         if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
-        this._mgm.context.beginPath();
+        this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         this._mgm.context.rect(prm.x, -prm.y, prm.width, -prm.height)
         if (prm.fillColor && prm.fillColor != '') {
@@ -1060,9 +1231,12 @@ class MGMObject {
         if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
-        this._mgm.context.beginPath();
+        this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
-        this._mgm.context.arc(prm.x, -prm.y, prm.radius, 0, 2 * Math.PI);
+        this._mgm.context.arc(prm.x, -prm.y,
+            // prm.x + this.width * this.pivotX, 
+            // -prm.y - this.height * this.pivotY, 
+            prm.radius, 0, 2 * Math.PI)
         if (prm.fillColor && prm.fillColor != '') {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
@@ -1078,7 +1252,7 @@ class MGMObject {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
         if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
-        this._mgm.context.beginPath();
+        this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         let i = 0
         for (const v of prm.corners) {
@@ -1107,26 +1281,48 @@ class MGMObject {
         this.y += speed * Math.sin(rad)
     }
 
-    wasd(speed) {
-        if (this._mgm.keys.w) this.y += speed
-        if (this._mgm.keys.s) this.y -= speed
-        if (this._mgm.keys.d) this.x += speed
-        if (this._mgm.keys.a) this.x -= speed
+    stepA(speed, angle = 0) {
+        this.angle = angle
+        const rad = -this.angle * Math.PI / 180;
+        this.x += speed * Math.cos(rad)
+        this.y += speed * Math.sin(rad)
     }
 
-    arrows(speed) {
+    wasd(speed = 0, LR = true) {
+        if (this._mgm.keys.d) this.x += speed
+        if (this._mgm.keys.a) this.x -= speed
+        if (LR) return
+        if (this._mgm.keys.w) this.y += speed
+        if (this._mgm.keys.s) this.y -= speed
+    }
+
+    wasdA(speed = 0, LR = true) {
+        let ot = false
+        if (this._mgm.keys.d) this.flipXV = 1
+        if (this._mgm.keys.a) this.flipXV = -1
+        if (this._mgm.keys.d) { this.stepA(speed, 0); ot = true; }
+        if (this._mgm.keys.a) { this.stepA(speed, 180); ot = true; }
+        if (LR) {
+            if (this._mgm.keys.w) { this.stepA(speed, -90); ot = true; }
+            if (this._mgm.keys.s) { this.stepA(speed, 90); ot = true; }
+        }
+        return ot
+    }
+
+    arrows(speed = 0, LR = true) {
         if (this._mgm.keys.up) this.y += speed
         if (this._mgm.keys.down) this.y -= speed
+        if (LR) return
         if (this._mgm.keys.right) this.x += speed
         if (this._mgm.keys.left) this.x -= speed
     }
 
     bounce() {
-        if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = -this.angle
-        if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = 180 - this.angle
+        if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = 180 - this.angle
+        if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = -this.angle
     }
 
-    stepTo(obj, speed) {
+    moveTo(obj, speed) {
         let obj2 = obj
         if (typeof obj == 'string') obj2 = this._mgm.getObj(obj)
         if (this.x == obj.x && this.y == obj.y) return
@@ -1154,7 +1350,7 @@ class MGMObject {
     contactObj(obj) {
         if (obj.active !== false &&
             !obj.hidden &&
-            !obj.noContact &&
+            // !obj.nowhere &&
             this.collider.top > obj.collider.bottom &&
             this.collider.bottom < obj.collider.top &&
             this.collider.right > obj.collider.left &&
@@ -1162,35 +1358,54 @@ class MGMObject {
     }
 
     contact(prm, key = 'name') {
-        let ot = null
+        let ot, res
+
+        // for (const obj of this._mgm.objects)
+        //     if (obj[key] == prm)
+        //         if (ot = this.contactObj(obj)) break
 
         for (const obj of this._mgm.objects)
-            if (obj[key] == prm)
-                if (ot = this.contactObj(obj)) break
+            if (res = this.contactObj(obj))
+                if (obj[key] == prm) {
+                    ot = res
+                    break
+                }
 
         return ot
     }
 
     contacts(prm, key = 'name') {
-        let mas = []
-        let ot = null
+        const mas = []
+        const ot = []
+        let res
 
-        for (const obj of this._mgm.objects) {
-            let ok = true
-            if (obj == this) ok = false
-            if (prm && obj[key] != prm) ok = false
-            if (ok)
-                if (ot = this.contactObj(obj))
-                    mas.push(ot)
-        }
+        // for (const obj of this._mgm.objects) {
+        //     let ok = true
+        //     if (obj == this) ok = false
+        //     if (prm && obj[key] != prm) ok = false
+        //     if (ok)
+        //         if (ot = this.contactObj(obj))
+        //             mas.push(ot)
+        // }
 
-        if (mas.length > 0) return mas
+        for (const obj of this._mgm.objects)
+            if (obj != this)
+                if (res = this.contactObj(obj))
+                    mas.push(res)
+
+        if (prm)
+            for (const obj of mas) //console.log(obj[key] +"|"+ prm);
+                if (obj[key] == prm) ot.push(obj)
+
+        // console.log(ot, mas);
+        if (ot.length > 0) return ot
+        // if (mas.length > 0) return mas
     }
 
     contactObjIn(obj) {
         if (obj.active !== false &&
             !obj.hidden &&
-            !obj.noContact &&
+            // !obj.nowhere &&
             this.collider.bottom > obj.collider.bottom &&
             this.collider.top < obj.collider.top &&
             this.collider.left > obj.collider.left &&
@@ -1200,80 +1415,93 @@ class MGMObject {
     contactIn(prm, key = 'name') {
         let ot = null
 
+        // for (const obj of this._mgm.objects)
+        //     if (obj[key] == prm)
+        //         if (ot = this.contactObjIn(obj)) break
+
         for (const obj of this._mgm.objects)
-            if (obj[key] == prm)
-                if (ot = this.contactObjIn(obj)) break
+            if (this.contactObjIn(obj))
+                if (obj[key] == prm) {
+                    ot = obj
+                    break
+                }
 
         return ot
     }
 
     contactsIn(prm, key = 'name') {
-        let mas = []
-        let ot = null
+        const mas = []
+        const ot = []
+        let res
 
-        for (const obj of this._mgm.objects) {
-            let ok = true
-            if (obj == this) ok = false
-            if (prm && obj[key] != prm) ok = false
-            if (ok)
-                if (ot = this.contactObjIn(obj))
-                    mas.push(ot)
-        }
+        // for (const obj of this._mgm.objects) {
+        //     let ok = true
+        //     if (obj == this) ok = false
+        //     if (prm && obj[key] != prm) ok = false
+        //     if (ok)
+        //         if (ot = this.contactObjIn(obj))
+        //             mas.push(ot)
+        // }
 
-        if (mas.length > 0) return mas
+        // if (mas.length > 0) return mas
+
+        for (const obj of this._mgm.objects)
+            if (obj != this)
+                if (res = this.contactObjIn(obj))
+                    mas.push(res)
+
+        if (prm)
+            for (const obj of mas)
+                if (obj[key] == prm) ot.push(obj)
+
+        // console.log(ot, mas);
+        if (ot.length > 0) return ot
     }
 
+    raycast(prm) {
+        if (!prm) prm = {}
+        if (!prm.angle) prm.angle = 0
+        if (!prm.steps) prm.steps = 40
+        if (!prm.density) prm.density = 10
 
-    raycast(angle, steps, all = false, density = 10) {
-        const rad = -(angle - 90) * Math.PI / 180;
         let x = this.x, y = this.y
+        const rad = -(prm.angle - 90) * Math.PI / 180;
+        let ot = null
+        if (prm.all) ot = []
 
-        if (!all) {
-            let ot = null
+        for (let i = 0; i < prm.steps; i++) {
+            x += prm.density * Math.cos(rad)
+            y += prm.density * Math.sin(rad)
 
-            for (let i = 0; i < steps; i++) {
-                x += density * Math.cos(rad)
-                y += density * Math.sin(rad)
+            if (prm.visible) {
+                this._mgm.context.beginPath()
+                this._mgm.context.arc(
+                    x + this._mgm.canvCX + this._cameraZXm,
+                    -y + this._mgm.canvCY + this._camersZYm,
+                    5, 0, 2 * Math.PI)
+                this._mgm.context.fillStyle = 'red'
+                this._mgm.context.fill()
+                this._mgm.context.restore()
+            }
 
-                for (const v of this._mgm.objects)
-                    if (this != v &&
-                        v.active !== false &&
-                        !v.hidden &&
-                        !v.noContact &&
-                        y > v.collider.bottom &&
-                        y < v.collider.top &&
-                        x > v.collider.left &&
-                        x < v.collider.right) {
-                        ot = v
+            for (const obj of this._mgm.objects)
+                if (this != obj &&
+                    obj.active !== false &&
+                    !obj.hidden &&
+                    y > obj.collider.bottom &&
+                    y < obj.collider.top &&
+                    x > obj.collider.left &&
+                    x < obj.collider.right) {
+                    if (prm.all) {
+                        if (!this._mgm._objInArr(obj, ot)) ot.push(obj)
+                    } else {
+                        ot = obj
                         break
                     }
-                if (ot) break
-            }
-
-            return ot
-        } else {
-            let ot = []
-
-            for (let i = 0; i < steps; i++) {
-                x += density * Math.cos(rad)
-                y += density * Math.sin(rad)
-
-                for (const v of this._mgm.objects)
-                    if (this != v &&
-                        v.active !== false &&
-                        !v.hidden &&
-                        !v.noContact &&
-                        y > v.collider.bottom &&
-                        y < v.collider.top &&
-                        x > v.collider.left &&
-                        x < v.collider.right) {
-                        ot.push(v)
-                    }
-            }
-
-            if (ot.length > 0) return ot
-            else return null
+                }
+            if (ot && !prm.all) break
         }
+        return ot
     }
 
     positionTo(prm) {
@@ -1299,19 +1527,6 @@ class MGMObject {
         if (this[n] < min) this[n] = min
         if (this[n] > max) this[n] = max
     }
-
-    /*
-        soundPlay3(nm, obj) { 
-            let source = context.createBufferSource();
-            source.buffer = sounds2[nm];
-            let gain = context.createGain();
-            gain.connect(context.destination);
-            gain.gain.value = v
-            source.connect(gain);
-            // source.loop = true;
-            source.start(0);
-        }
-    */
 
     soundPlay(...args) {
         let vol = 1
@@ -1367,9 +1582,9 @@ class MGMObject {
             else if (this.sounds) sound = this._mgm._firstV(this.sounds)
         } else sound = this.sounds[name]
 
-        if (this.sound.mloop) {
-            clearInterval(this.sound.mloop)
-            this.sound.mloop = null
+        if (sound.mloop) {
+            clearInterval(sound.mloop)
+            sound.mloop = null
         }
 
         sound.pause()
@@ -1392,7 +1607,7 @@ class MGMObject {
             return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
     }
 
-    wait(name, frames, func, loop = false) { // waits?
+    wait(name, frames, func) {
         if (frames == null) delete this._wait[name]
         else {
             if (!this._wait[name]) {
@@ -1400,9 +1615,23 @@ class MGMObject {
                 const wait = this._wait[name]
                 wait.sch = 0
                 wait.frames = frames
+                wait.repeat = false
                 wait.func = func
-                wait.loop = loop
-                if (loop) func()
+            }
+        }
+    }
+
+    repeat(name, frames, func) {
+        if (frames == null) delete this._wait[name]
+        else {
+            if (!this._wait[name]) {
+                this._wait[name] = {}
+                const wait = this._wait[name]
+                wait.sch = 0
+                wait.frames = frames
+                wait.repeat = true
+                wait.func = func
+                func()
             }
         }
     }
@@ -1412,7 +1641,7 @@ class MGMObject {
             const wait = this._wait[j]
             if (wait.sch == wait.frames) {
                 wait.func()
-                if (wait.loop) wait.sch = 0
+                if (wait.repeat) wait.sch = 0
                 else delete this._wait[j]
             } else wait.sch++
         }
@@ -1426,6 +1655,17 @@ class MGMObject {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
