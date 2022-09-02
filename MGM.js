@@ -1621,7 +1621,11 @@ class MGMObject {
         }
     }
 
+<<<<<<< HEAD
     repeat(name, frames, func) {
+=======
+    repeat(name, frames, func) { 
+>>>>>>> 553c1ac288ebeb0b92eca7fe232a7b51320df0e0
         if (frames == null) delete this._wait[name]
         else {
             if (!this._wait[name]) {
