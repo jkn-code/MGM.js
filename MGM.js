@@ -1,6 +1,6 @@
 
 
-console.log('MGM v. 1.0');
+console.log('MGM 1.0');
 
 class MGM {
     constructor(params) {
