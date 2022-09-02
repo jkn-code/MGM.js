@@ -1,10 +1,10 @@
 
-console.log('Created with http://mgm.innercat.ru');
+
 console.log('MGM v. 1.0');
 
 class MGM {
-    constructor(prm) {
-        this.prm = prm
+    constructor(params) {
+        this.params = params
         this._loadPage()
     }
 
@@ -18,9 +18,9 @@ class MGM {
         this.names = {}
         this._build = {}
 
-        if (this.prm.var)
-            for (const j in this.prm.var)
-                this[j] = this.prm.var[j]
+        if (this.params.var)
+            for (const j in this.params.var)
+                this[j] = this.params.var[j]
 
         window.onload = () => this._loadResourses()
     }
@@ -34,9 +34,9 @@ class MGM {
             viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
             document.head.appendChild(viewPortTag)
 
-            document.body.style.backgroundColor = this.prm.bgPage || '#eee'
-            document.body.style.fontFamily = this.prm.fontFamily || 'Tahoma';
-            document.body.style.color = this.prm.fontColor || '#555'
+            document.body.style.backgroundColor = this.params.bgPage || '#eee'
+            document.body.style.fontFamily = this.params.fontFamily || 'Tahoma';
+            document.body.style.color = this.params.fontColor || '#555'
             document.body.style.overflow = 'hidden'
             document.body.style.userSelect = 'none'
             document.body.style.fontSize = 'none'
@@ -46,15 +46,15 @@ class MGM {
             this._consDiv.style.cssText = `position: absolute; z-index: 999; top: 0px; left: 0px; max-height: 50vh; width: 50vw; overflow-y: auto; opacity: 1; display: none; font-size: 11px; word-wrap: break-word;`
             document.body.appendChild(this._consDiv)
 
-            if (this.prm.icon) {
+            if (this.params.icon) {
                 let link = document.createElement('link')
                 link.rel = 'icon'
-                link.href = this.prm.icon
+                link.href = this.params.icon
                 document.head.appendChild(link)
             }
-            if (this.prm.name) {
+            if (this.params.name) {
                 if (!document.createElement('title')) document.createElement('title')
-                document.title = this.prm.name
+                document.title = this.params.name
             }
 
             this.curtain = document.createElement('div')
@@ -108,10 +108,10 @@ class MGM {
         this.camera = { x: 0, y: 0 }
 
         // BORDERS
-        if (this.prm.borders) {
-            this.prm.borders = this.prm.borders.split(',')
-            if (this.prm.borders[0]) this.prm.borders[0] = this.prm.borders[0].trim()
-            if (this.prm.borders[1]) this.prm.borders[1] = this.prm.borders[1].trim()
+        if (this.params.borders) {
+            this.params.borders = this.params.borders.split(',')
+            if (this.params.borders[0]) this.params.borders[0] = this.params.borders[0].trim()
+            if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
         }
 
         // console.log(this);
@@ -131,7 +131,7 @@ class MGM {
             }
             this.context = this.canvas.getContext('2d')
             this.context.font = '48px serif'
-            this.canvas.style.backgroundColor = this.prm.bgCanvas || '#fff'
+            this.canvas.style.backgroundColor = this.params.bgCanvas || '#fff'
             document.body.appendChild(this.canvas)
 
             this.plane = document.createElement('div')
@@ -199,10 +199,10 @@ class MGM {
             })
             document.addEventListener("touchmove", toushFn)
 
-            const color = this.prm.mobileColor || 'gray'
+            const color = this.params.mobileColor || 'gray'
             const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 5;'
-            let control = this.prm.mobileControl || 'stickL, br1, br2, br3, br4'
-            if (this.prm.mobileControl === false) control = ''
+            let control = this.params.mobileControl || 'stickL, br1, br2, br3, br4'
+            if (this.params.mobileControl === false) control = ''
             let cm = control.split(',')
             cm.forEach(c => {
                 const name = c.trim()
@@ -317,9 +317,9 @@ class MGM {
         // this.audioCtx = new AudioContext()
         // this._loadSounds()
 
-        if (this.prm.autorun) this._run()
+        if (this.params.autorun) this._run()
         else {
-            this.curtainIn.innerHTML = this.prm.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
+            this.curtainIn.innerHTML = this.params.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
             this.curtain.onclick = () => {
                 if (!this.RUN && !this.STOP)
                     this._run()
@@ -369,24 +369,24 @@ class MGM {
     }
 
     _resizeWin() {
-        this.prm.ratio = this.prm.ratio || 1
-        if (this.prm.ratio == 'auto') this.prm.ratio = innerWidth / innerHeight
+        this.params.ratio = this.params.ratio || 1
+        if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
 
         let w = 0, h = 0
 
         h = innerHeight
-        w = innerHeight * this.prm.ratio
+        w = innerHeight * this.params.ratio
         if (w > innerWidth) {
-            h = innerWidth / this.prm.ratio
+            h = innerWidth / this.params.ratio
             w = innerWidth
         }
 
         this.canvas.style.width = w + 'px'
         this.canvas.style.height = h + 'px'
-        this.prm.quality = this.prm.quality || 1000
-        this.canvas.width = this.prm.quality * this.prm.ratio
-        this.canvas.height = this.prm.quality
-        this.kfHeight = h / this.prm.quality
+        this.params.quality = this.params.quality || 1000
+        this.canvas.width = this.params.quality * this.params.ratio
+        this.canvas.height = this.params.quality
+        this.kfHeight = h / this.params.quality
         this.canvCX = this.canvas.width / 2
         this.canvCY = this.canvas.height / 2
 
@@ -402,7 +402,7 @@ class MGM {
         this.curtain.style.width = (cpos.width + 1) + 'px'
         this.curtain.style.height = cpos.height + 'px'
 
-        document.body.style.fontSize = this.prm.fontSize || (h / 20) + 'px'
+        document.body.style.fontSize = this.params.fontSize || (h / 20) + 'px'
 
         this._getHtmlBorders()
     }
@@ -452,22 +452,22 @@ class MGM {
     _run() {
         console.log('run');
         let ok = true
-        if (!this.prm.platform) this.prm.platform = 'pc'
-        this.prm.platform = this.prm.platform.split(',')
-        if (this.isMobile && this.prm.platform.indexOf('mobile') == -1) {
+        if (!this.params.platform) this.params.platform = 'pc'
+        this.params.platform = this.params.platform.split(',')
+        if (this.isMobile && this.params.platform.indexOf('mobile') == -1) {
             alert('Mobile usage disabled')
             ok = false
         }
-        if (!this.isMobile && this.prm.platform.indexOf('pc') == -1) {
+        if (!this.isMobile && this.params.platform.indexOf('pc') == -1) {
             alert('Use on PC disabled')
             ok = false
         }
 
         if (ok) {
-            if (this.prm.fullscreen && !this.prm.autorun) this._toggleFullScreen()
+            if (this.params.fullscreen && !this.params.autorun) this._toggleFullScreen()
             this.curtainIn.innerHTML = ''
             this.curtain.style.display = 'none'
-            if (this.prm.cursor === false) this.plane.style.cursor = 'none'
+            if (this.params.cursor === false) this.plane.style.cursor = 'none'
             this.objects = []
             this._nowhere = []
             this.RUN = true
@@ -539,7 +539,7 @@ class MGM {
             if (html) this.mouse.down = false
         }
 
-        if (this.prm.orderY) this.objects.sort(this._orderY)
+        if (this.params.orderY) this.objects.sort(this._orderY)
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
@@ -664,8 +664,8 @@ class MGM {
         console.log('stop');
         this.RUN = false
         this.STOP = true
-        if (txt || this.prm.stopText) {
-            this.curtainIn.innerHTML = txt || this.prm.stopText
+        if (txt || this.params.stopText) {
+            this.curtainIn.innerHTML = txt || this.params.stopText
             this.curtain.style.display = 'flex'
         }
     }
@@ -812,10 +812,10 @@ class MGM {
 
 
 class MGMObject {
-    constructor(prm) {
-        // console.log(prm);
-        for (const j in prm._mgm.object[prm.name]) {
-            const v = prm._mgm.object[prm.name][j]
+    constructor(params) {
+        // console.log(params);
+        for (const j in params._mgm.object[params.name]) {
+            const v = params._mgm.object[params.name][j]
             if (j != 'pic' && j != 'pics' &&
                 j != 'sound' && j != 'sounds' &&
                 j != '_mgm' &&
@@ -823,11 +823,9 @@ class MGMObject {
                 this[j] = JSON.parse(JSON.stringify(v))
                 // this[j] = structuredClone(v)
             }
-            else {
-                this[j] = v
-            }
+            else this[j] = v
         }
-        for (const j in prm) this[j] = prm[j]
+        for (const j in params) this[j] = params[j]
         // console.log(this);
         this._init()
     }
@@ -1303,7 +1301,7 @@ class MGMObject {
                     mas.push(res)
 
         if (prm)
-            for (const obj of mas) 
+            for (const obj of mas)
                 if (obj[key] == prm) ot.push(obj)
 
         if (ot.length > 0) return ot
