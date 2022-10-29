@@ -1,10 +1,13 @@
 # MGM.js
 Mini game maker
 
-|| The project is under development and testing ||
+|| ПРОЕКТ НАХОДИТСЯ В РАЗРАБОТКЕ ||
 
 ## Description
 
+Библиотека для помощи в создании игр на `javascript`.
+
+<!-- 
 **MGM** is a class that is designed to help you program games, animations, presentations, and so on. in javascript. The class has prepared tools for convenient handling of objects in the visual field, the necessary settings and features. An important condition for MGM is accessibility so that novice programmers and even children can use it. If necessary, the class can be easily extended using javascript.
 
 **Advantages**
@@ -31,26 +34,19 @@ Mini game maker
 
 **Planned for the distant future**
 - 3D.
-- Multiplayer.
+- Multiplayer. -->
 
 ____
 
 # Instruction
 
-Download the latest version of **MGM.js**. Place it in the folder where you plan to make the game. Create an index.html file in this folder. In it, create basic html tags, include the MGM.js file in the head, and create an instance of the class below in the body.
+Скачать `MGM.js`, создать файл `mygame.html`, и написать там код:
 
 ```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <script src="MGM.js"></script>
-    </head>
-    <body>
-        <script>
-            const Mgm = new MGM({})
-        </script>
-    </body>
-</html>
+<script src="MGM.js"></script>
+<script>
+    const Mgm = new MGM()
+</script>
 ```
 ____
 
@@ -66,7 +62,7 @@ ____
 
 # Donate
 
-Support project development
+Зодонатить:
 
 [yoomoney](https://yoomoney.ru/to/410018410401723)
 
