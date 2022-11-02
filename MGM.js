@@ -16,6 +16,7 @@ class MGM {
 
 
     _init() {
+        if (!this.params.autorun) this.params.autorun = true
 
         {
             let viewPortTag = document.createElement('meta');
@@ -226,6 +227,7 @@ class MGM {
         }
 
 
+
         if (!this.isMobile) {
             this.mouse = {}
             this.plane.onmousemove = e => {
@@ -306,10 +308,13 @@ class MGM {
 
         console.log('init ok');
         this._loadResources()
+
+
     }
 
 
     _loadResources() {
+        
         this._build.resAll = 0
         this._build.resLoad = 0
 
@@ -350,6 +355,7 @@ class MGM {
                 clearInterval(loadWait)
                 console.log('load ok');
                 setTimeout(() => {
+                    this._build.isLoad = true
                     if (this.params.autorun !== false) this._run()
                     else {
                         this.curtainIn.innerHTML = this.params.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
@@ -357,7 +363,7 @@ class MGM {
                             this._run()
                         }
                     }
-                }, 500)
+                }, 100)
             }
         }, 10)
     }
@@ -383,6 +389,15 @@ class MGM {
 
 
     reload(url) {
+        let w = setInterval(() => {
+            if (this._build.isLoad) {
+                clearInterval(w)
+                this._reload(url)
+            }
+        }, 0)
+    }
+
+    _reload(url) {
         console.log('reload');
         Mgm.stop()
 
@@ -554,6 +569,10 @@ class MGM {
             ht.x2 = left + cpos.width
             ht.y2 = top + cpos.height
         })
+    }
+
+
+    _classInf() {
     }
 
 
@@ -942,15 +961,16 @@ class MGMObject {
             const v = obj[j]
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
                 j == 'sound' || j == '_sounds' || j == '_sound' ||
-                j == 'init' || j == 'start' || j == 'update' || j == 'stop' ||
-                j == 'name' || j == '_mgm' || j == '_obj') this[j] = v
+                j == 'name' || j == '_mgm' || j == '_obj' ||
+                typeof v == 'function') this[j] = v
             else {
                 if (params.isClone) this[j] = JSON.parse(JSON.stringify(v))
             }
         }
 
-        if (!params.isClone && this.init) this.init(this)
         this._mgm = params._mgm
+
+        if (!params.isClone && this.init) this.init(this)
 
         if (!params.isClone) this.name = params.name
         if (params.isClone)
@@ -1030,6 +1050,8 @@ class MGMObject {
         this._pressK = true
     }
 
+    _classInf() {
+    }
 
     _update() {
         if (this._goStart && this.start) {
@@ -1042,7 +1064,6 @@ class MGMObject {
         if (this.update) this.update(this)
         this._work()
     }
-
 
     _setNocont() {
         if (this.nocont && !this._nocont) {
@@ -1066,7 +1087,6 @@ class MGMObject {
         }
     }
 
-    
     _work() {
         if (this.angle < -180) this.angle += 360
         if (this.angle > 180) this.angle -= 360
@@ -1121,6 +1141,7 @@ class MGMObject {
     }
 
     _physicWork() {
+        if (this.hidden) return
         if (!this.physics) return
 
         if (this.physics == 'unit' || this.physics == 'unit2') {
@@ -1128,7 +1149,7 @@ class MGMObject {
             let nextY = 0
             this.onGround = false
             for (const obj of this._mgm.objects)
-                if (this.objectId != obj.objectId)
+                if (this.objectId != obj.objectId && !obj.hidden)
                     if (obj.physics == 'wall'
                         || (this.physics == 'unit' && obj.physics == 'unit2')
                         || (this.physics == 'unit2' && obj.physics == 'unit'))
@@ -1188,8 +1209,8 @@ class MGMObject {
 
         this._mgm.context.save()
         this._mgm.context.translate(
-            this.x + this._mgm.canvCX + this._cameraZXm,
-            -this.y + this._mgm.canvCY + this._camersZYm
+            Math.round(this.x + this._mgm.canvCX + this._cameraZXm),
+            Math.round(-this.y + this._mgm.canvCY + this._camersZYm)
         )
         this._drawPrimitives(2)
         if (this.alpha < 1) this._mgm.context.globalAlpha = this.alpha
@@ -1202,6 +1223,7 @@ class MGMObject {
             -this._width / 2 + this._width * this.pivotX,
             -this._height / 2 - this._height * this.pivotY,
             this._width, this._height)
+            
         this._drawPrimitives(1)
         this._mgm.context.restore()
 
