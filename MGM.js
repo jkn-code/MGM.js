@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.3');
+console.log('MGM 1.4');
 
 class MGM {
     constructor(params) {
@@ -16,7 +16,19 @@ class MGM {
 
 
     _init() {
-        if (!this.params.autorun) this.params.autorun = true
+        if (this.params.autorun !== false) this.params.autorun = true
+
+        {
+            const style = document.createElement('style')
+            style.type = 'text/css'
+            const css = `
+            .mgm-canvas {
+                1border: 10px solid red;
+            }
+            `
+            style.appendChild(document.createTextNode(css))
+            document.head.appendChild(style)
+        }
 
         {
             let viewPortTag = document.createElement('meta');
@@ -252,6 +264,10 @@ class MGM {
             this.keys = {}
             this.press = {}
             this.pressK = {}
+            /* let s = {}
+            for (let i = 48; i <= 57; i++)
+                s[i] = 'n' + (String.fromCharCode(i)).toLowerCase()
+            console.log(s);*/
             let keyNums = {
                 38: 'up', 40: 'down', 37: 'left', 39: 'right',
                 32: 'space', 13: 'enter', 27: 'escape', 16: 'shift', 17: 'ctrl', 8: 'backspace',
@@ -305,16 +321,15 @@ class MGM {
             this._fpsSch = 0
         }, 1000)
 
+        if (this.params.editor) this._editor = new MGMMapEditor({ mgm: this })
 
         console.log('init ok');
         this._loadResources()
-
-
     }
 
 
     _loadResources() {
-        
+
         this._build.resAll = 0
         this._build.resLoad = 0
 
@@ -359,9 +374,7 @@ class MGM {
                     if (this.params.autorun !== false) this._run()
                     else {
                         this.curtainIn.innerHTML = this.params.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
-                        this.curtain.onclick = () => {
-                            this._run()
-                        }
+                        this.curtain.onclick = () => this._run()
                     }
                 }, 100)
             }
@@ -382,8 +395,9 @@ class MGM {
         this.zList = []
         this.objectsId = 0
         setTimeout(() => {
-            this._crtObjs()
-            this._loop()
+            this._initObjs()
+            if (this.params.editor) this._editor.loadObj()
+            else this._loop()
         }, 0)
     }
 
@@ -586,18 +600,17 @@ class MGM {
     }
 
 
-    _crtObjs() {
+    _initObjs() {
         this.context.font = '20px Tahoma'
 
-        if (!this.params.map)
-            for (const j in this.object) {
-                this.object[j] = this.clone({
-                    name: j,
-                    isClone: false,
-                })
-            }
-        else {
-        }
+        for (const j in this.object)
+            this.object[j] = this.clone({
+                name: j,
+                isClone: false,
+            })
+
+        this._build.isInitAll = true
+
     }
 
     _touchLoop() {
@@ -923,6 +936,22 @@ class MGM {
     round(n, t) {
         return Math.round(n * t) / t
     }
+
+    loadMap(map) {
+        if (this.params.editor) return
+
+        let w = setInterval(() => {
+            if (this._build.isInitAll) {
+                clearInterval(w)
+                this._loadMap(map)
+            }
+        }, 0)
+
+    }
+
+    _loadMap(map) {
+        console.log('_loadMap ', map);
+    }
 }
 
 
@@ -1050,8 +1079,6 @@ class MGMObject {
         this._pressK = true
     }
 
-    _classInf() {
-    }
 
     _update() {
         if (this._goStart && this.start) {
@@ -1064,6 +1091,7 @@ class MGMObject {
         if (this.update) this.update(this)
         this._work()
     }
+    
 
     _setNocont() {
         if (this.nocont && !this._nocont) {
@@ -1223,7 +1251,7 @@ class MGMObject {
             -this._width / 2 + this._width * this.pivotX,
             -this._height / 2 - this._height * this.pivotY,
             this._width, this._height)
-            
+
         this._drawPrimitives(1)
         this._mgm.context.restore()
 
@@ -1432,15 +1460,20 @@ class MGMObject {
 
     wasdA(speed = 0, LR = true) {
         let down = false
-        if (this._mgm.keys.d) { this.angle = 0; down = true; }
-        if (this._mgm.keys.a) { this.angle = 180; down = true; }
-        if (this._mgm.keys.w) { this.angle = -90; down = true; }
-        if (this._mgm.keys.s) { this.angle = 90; down = true; }
-        if (this._mgm.keys.w && this._mgm.keys.d) { this.angle = -45; down = true; }
-        if (this._mgm.keys.w && this._mgm.keys.a) { this.angle = -135; down = true; }
-        if (this._mgm.keys.s && this._mgm.keys.d) { this.angle = 45; down = true; }
-        if (this._mgm.keys.s && this._mgm.keys.a) { this.angle = 135; down = true; }
-        if (down) this.step(speed)
+        if (this._mgm.keys.w) this.angle = -90;
+        if (this._mgm.keys.s) this.angle = 90;
+        if (LR) {
+            if (this._mgm.keys.d) this.angle = 0;
+            if (this._mgm.keys.a) this.angle = 180;
+            if (this._mgm.keys.w && this._mgm.keys.d) this.angle = -45;
+            if (this._mgm.keys.w && this._mgm.keys.a) this.angle = -135;
+            if (this._mgm.keys.s && this._mgm.keys.d) this.angle = 45;
+            if (this._mgm.keys.s && this._mgm.keys.a) this.angle = 135;
+        }
+        if (this._mgm.keys.w ||
+            this._mgm.keys.s ||
+            this._mgm.keys.a ||
+            this._mgm.keys.d) this.step(speed)
     }
 
     arrows(speed = 0, LR = true) {
@@ -1835,7 +1868,364 @@ class MGMObject {
 
 
 
+class MGMMapEditor {
+    constructor(params) {
+        console.log('MAP> ', params);
+        this.params = params
+        this.params.mgm.params.ratio = 'auto'
+        this.params.mgm._resizeWin()
+        this.initHtml()
+        this.initVar()
+        this.changeGrid()
+    }
 
+    initHtml() {
+        const style = document.createElement('style')
+        style.type = 'text/css'
+        const css = `
+        .mgm-map {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 999;
+            width: 400px;
+            height: 100vh;
+            1border: 1px solid #0005;
+            background-color: #000c;
+            1box-shadow: 0 0 20px #0005;
+            color: #fff;
+            font-size: 12px;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        .mgmm-bline {
+            display: flex;
+            1justify-content: space-between;
+            align-items: center;
+            padding: 7px 0;
+            1border-bottom: 1px solid #555;
+            white-space: nowrap;
+        }
+        .mgm-map input[type="text"],
+        .mgm-map input[type="number"], 
+        .mgm-map input[type="number"], 
+        .mgm-map textarea {
+            border: 1px solid #aaa;
+            background-color: #555;
+            color: #fff;
+            width: 100%;
+            margin: 0 15px 0 5px;
+        }
+        .mgm-map .btn {
+            border: 1px solid #555;
+            padding: 2px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            background-color: #222;
+            transition: 0.3s;
+        }
+        .mgm-map-move .btn {
+            padding: 2px 15px;
+            line-height: 30px;
+            font-size: 18px;
+        }
+        .mgm-map .btn:hover {
+            background-color: rgb(73, 73, 73);
+            1box-shadow: 0 0 10px #fff;
+            border: 1px solid #aaa;
+        }
+        .mgm-map .btn.psel {
+            border: 1px solid #555;
+        }
+        .mgm-map .btn.psel.sel {
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px #fffa;
+        }
+        .mgm-map .btn.vdl {
+            border: 1px solid #555;
+        }
+        .mgm-map-move {
+            position: absolute;
+            top: 0px;
+            right: 400px;
+            text-align: center;
+            z-index: 999;
+            user-select: none;
+            background-color: #000c;
+            padding: 15px;
+            padding-right: 5;
+            border-bottom-left-radius: 30px;
+            white-space: nowrap;
+        }
+        .mgm-map hr {
+            height: 1px;
+            border: none;
+            background: #333;
+        }
+
+        #mgmmUList {
+            padding: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #mgmmUList div {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            height: 50px;
+            1vertical-align: bottom;
+            cursor: pointer;
+        }
+        #mgmmUList div span {
+            display: block;
+        }
+        #mgmmUList div img {
+            height: 30px;
+            margin-bottom: 5px;
+        }
+        .mgmmObjSel {
+            border: 1px solid #fff!important;
+            box-shadow: 0 0 10px #fff;
+        }
+
+        #mgmmPlane {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 900;
+        }
+        #mgmmGrid {
+            background-size: 20px 10px;
+            background-image:
+                linear-gradient(to right, #fff1 1px, transparent 1px),
+                linear-gradient(to bottom, #fff1 1px, transparent 1px);
+            z-index: 900;
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+        }
+        #mgmmHover {
+            position: absolute;
+            top: -10px;
+            width: 4px;
+            height: 4px;
+            transform: translate(-1px, -1px);
+            background-color: red;
+            z-index: 910;
+            pointer-events: none;
+        }
+        `
+        style.appendChild(document.createTextNode(css))
+        document.head.appendChild(style)
+
+        this.mplane = document.createElement('div')
+        document.body.appendChild(this.mplane)
+        this.mplane.innerHTML = `
+        <div class="mgm-map">
+            <div class="mgmm-bline">
+                Load file <input type="text" id="mgmmLoadFile">
+                <span class="btn" onclick="MgmMap.clearMap()">Clear</span>
+            </div>
+            <div class="mgmm-bline">
+                Map code: <input type="text" id="mgmmJstext">
+                <span class="btn" id="mgmmCopy">Copy</span>
+            </div>
+            <div class="mgmm-bline">
+                Layer-Z: <input type="number" id="mgmmLayerZ" value="0" style="width: 50px">
+                Alpha.: <input type="range" id="mgmmLayersOpacity" min="0" max="10" value="10">
+            </div>
+            <div class="mgmm-bline">
+                Grid: &nbsp;
+                <label>on/off<input type="checkbox" id="mgmmGridOn" checked></label>&nbsp;&nbsp;
+                width: <input type="number" id="mgmmGridWidth" style="width: 50px" value="20">
+                height: <input type="number" id="mgmmGridHeight" style="width: 50px" value="20">
+            </div>
+            <div class="mgm-map-move">
+                <span class="btn" id="mgmmTUp">&#9650;</span><br>
+                <span class="btn" id="mgmmTLeft">&#9668;</span>
+                <span class="btn" id="mgmmTRight">&#9658;</span><br>
+                <span class="btn" id="mgmmTDown">&#9660;</span>
+            </div>
+            <hr>
+            <div class="mgmm-bline">
+                <span class="btn psel" id="mgmmCfg">Cfg</span> &nbsp;
+                <span class="btn psel" id="mgmmEraser">Eraser</span>
+            </div>
+            <div id="mgmmUList"></div>
+        </div>
+
+        <div id="mgmmPlane"></div>
+        <div id="mgmmGrid"></div>
+        <div id="mgmmHover"></div>
+        `
+    }
+
+    initVar() {
+        this.mmap = []
+        this.mapCX = 0
+        this.mapCY = 0
+        this.idObjs = 1
+        this.itemSel = {
+            obj: undefined,
+            type: undefined
+        }
+
+        mgmmJstext.onclick = e => e.target.select()
+        mgmmCopy.onclick = e => navigator.clipboard.writeText(mgmmJstext.value)
+        mgmmGrid.onclick = e => this.clickGrid()
+        mgmmCfg.onclick = e => this.objItemClick(null, 'cfg')
+        mgmmEraser.onclick = e => this.objItemClick(null, 'eraser')
+        mgmmPlane.onclick = e => this.mgmmPlaneClick(e)
+        mgmmGridWidth.onchange = e => this.changeGrid()
+        mgmmGridHeight.onchange = e => this.changeGrid()
+        mgmmGridOn.onchange = e => {
+            this.grid.on = !this.grid.on
+            this.changeGrid()
+        }
+
+        this.mouse = { x: 0, y: 0 }
+        document.onmousemove = e => {
+            this.mouse.x = e.clientX
+            this.mouse.y = e.clientY
+            this.setHover()
+        }
+
+        this.hover = {}
+
+        this.grid = {
+            on: true,
+            x: 0,
+            y: 0,
+        }
+
+        const save = JSON.parse(localStorage['MgmMapSave'] || '{}')
+        this.save = save[decodeURI(location.pathname)] || {}
+        this.selObjName = this.save.selObjName
+        this.eraser = this.save.eraser || false
+        this.cfg = this.save.cfg || false
+        this.layersOpacity = this.save.layersOpacity
+        this.mapCX = this.save.mapCX || '0'
+        this.mapCY = this.save.mapCY || '0'
+    }
+
+    loadObj() {
+        console.log(this.params.mgm.object);
+        for (const j in this.params.mgm.object) {
+            const obj = this.params.mgm.object[j]
+            console.log(obj);
+            const objItem = document.createElement('div')
+            objItem.setAttribute('name-obj', obj.name)
+            objItem.onclick = e => this.objItemClick(obj, 'obj')
+            if (obj._pics) objItem.appendChild(obj._pics[obj.picName])
+            objItem.innerHTML += '<span>' + obj.name + '</span>'
+            mgmmUList.appendChild(objItem)
+        }
+    }
+
+    objItemClick(obj, type) {
+        this.itemSel.obj = obj
+        this.itemSel.type = type
+        document.querySelectorAll('#mgmmUList div').forEach(e => e.classList.remove('mgmmObjSel'))
+        mgmmCfg.classList.remove('mgmmObjSel')
+        mgmmEraser.classList.remove('mgmmObjSel')
+        if (type == 'obj') document.querySelector('#mgmmUList div[name-obj="' + obj.name + '"]').classList.add('mgmmObjSel')
+        if (type == 'cfg') mgmmCfg.classList.add('mgmmObjSel')
+        if (type == 'eraser') mgmmEraser.classList.add('mgmmObjSel')
+    }
+
+    mgmmPlaneClick(e) {
+        console.log(e);
+    }
+
+    changeGrid() {
+        console.log(this.grid);
+        if (this.grid.on) {
+            this.grid.x = this.mapCX % mgmmGridWidth.value
+            this.grid.y = this.mapCY % mgmmGridHeight.value
+            mgmmGrid.style.backgroundSize = mgmmGridWidth.value + 'px ' + mgmmGridHeight.value + 'px'
+            mgmmGrid.style.backgroundPosition = this.grid.x + 'px ' + this.grid.y + 'px'
+        } else {
+        }
+        this.saveMap()
+    }
+
+    setHover() {
+        if (this.grid.on) {
+            this.hover.px = Math.floor((this.mouse.x - this.grid.x) / mgmmGridWidth.value) * mgmmGridWidth.value + this.grid.x
+            mgmmHover.style.left = this.hover.px + 'px'
+            this.hover.py = Math.floor((this.mouse.y - this.grid.y) / mgmmGridHeight.value) * mgmmGridHeight.value + this.grid.y
+            mgmmHover.style.top = this.hover.py + 'px'
+        } else {
+            this.hover.px = this.mouse.x
+            mgmmHover.style.left = this.hover.px + 'px'
+            this.hover.py = this.mouse.y
+            mgmmHover.style.top = this.hover.py + 'px'
+        }
+    }
+
+    clickGrid() {
+        let x = this.hover.px - this.mapCX
+        let y = this.hover.py - this.mapCY
+        console.log(x, y);
+
+        if (this.itemSel.type == 'obj') {
+            this.mmap.push({
+                idObj: this.idObjs++,
+                objName: this.itemSel.obj.name,
+                x: x,
+                y: y,
+                layerZ: mgmmLayerZ.value
+            })
+        }
+
+        if (this.eraser) {
+            this.mmap.forEach((mobj, i) => {
+                if (mobj.x == x && mobj.y == y && mobj.layerZ == mgmmLayerZ.value) {
+                    console.log('delete ', mobj);
+                    mobj._imgMap.remove()
+                    mobj._pivot.remove()
+                    this.mmap.splice(i, 1)
+                }
+            })
+        }
+
+        this.printMMap()
+    }
+
+    printMMap() {
+
+        console.log(this.mmap);
+
+
+
+        this.saveMap()
+    }
+
+    saveMap() {
+        console.log('-savePrj-');
+        const save = JSON.parse(localStorage['MgmMapSave'] || '{}')
+        this.save = save[decodeURI(location.pathname)]
+        if (!this.save) this.save = {}
+        this.save.gridOn = mgmmGridOn.checked
+        this.save.gridWidth = mgmmGridWidth.value
+        this.save.gridHeight = mgmmGridHeight.value
+        this.save.layerZ = mgmmLayerZ.value
+        this.save.layersOpacity = mgmmLayersOpacity.value
+        this.save.mapCX = this.mapCX
+        this.save.mapCY = this.mapCY
+        this.save.map = this.mmap
+        mgmmJstext.value = 'const Map = ' + JSON.stringify(this.save)
+        save[decodeURI(location.pathname)] = this.save
+        localStorage['MgmMapSave'] = JSON.stringify(save)
+    }
+}
 
 
 

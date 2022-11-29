@@ -44,16 +44,6 @@ ____
 ```
 ____
 
-<!-- [MGM class parameters](instruction/MGM-class-parameters.md)
-
-[MGM class variables](instruction/MGM-class-variables.md)
-
-[MGM class methods](instruction/MGM-class-methods.md)
-
-[Mgm object parameters](instruction/Mgm-object-parameters.md)
-
-[Mgm object methods](instruction/Mgm-object-methods.md) -->
-
 # Donate
 
 Зодонатить:
