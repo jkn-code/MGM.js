@@ -152,8 +152,8 @@ class MGM {
 
         this._defaultContext = {
             textAlign: 'left',
-            fontColor: '#000',
-            fontSize: '20px',
+            fontColor: document.body.style.color,
+            fontSize: 20,
             fontFamily: 'Tahoma',
             fontWeight: 'normal',
         }
@@ -206,6 +206,8 @@ class MGM {
         this._touchBtns = []
         this._touchSticks = []
 
+        if (!this.params.mobileStyle) this.params.mobileStyle = {}
+
         const toushFn = e => {
             this.touches = e.touches
             for (let i = 0; i < this.touches.length; i++) {
@@ -237,8 +239,7 @@ class MGM {
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
         let control = this.params.mobileControl || 'stickL, br1, br2, br3, br4'
         if (this.params.mobileControl === false) control = ''
-        let controls = control.split(',')
-        controls.forEach(c => {
+        control.split(',').forEach(c => {
             const name = c.trim()
 
             let bcrd = ''
@@ -300,6 +301,19 @@ class MGM {
                     d2: 60,
                 })
             }
+        })
+
+        this._touchBtns.forEach(bt => {
+            for (const j in this.params.mobileStyle)
+                for (const k in this.params.mobileStyle[j])
+                    if (bt.name == j)
+                        bt.el.style[k] = this.params.mobileStyle[j][k]
+        })
+        this._touchSticks.forEach(st => {
+            for (const j in this.params.mobileStyle)
+                for (const k in this.params.mobileStyle[j])
+                    if (st.name == j)
+                        st.el.style[k] = this.params.mobileStyle[j][k]
         })
     }
 
@@ -743,9 +757,10 @@ class MGM {
             this._logs = this._logs.splice(-300)
             this._consDiv.innerHTML = '> ' + this._logs.join('<br>> ')
                 + '<br><br>fps: ' + this.fps + ', frame: ' + this.frame
+                + '<br><br>objs: ' + this.objects.length + ', nocons: ' + this.noconts.length
             this._consDiv.scrollTop = 10000
         }
-        
+
         if (this.RUN) requestAnimationFrame(() => this._loop())
         else this._soundsStop()
     }
@@ -909,7 +924,6 @@ class MGM {
         if (this.noconts.length > 10000) return
         prm._mgm = this
         const obj = new MGMObject(prm)
-        this.objects.push(obj)
 
         return obj
     }
@@ -1019,7 +1033,6 @@ class MGM {
 class MGMObject {
     constructor(params) {
 
-
         if (params.isClone !== false) params.isClone = true
         let obj
 
@@ -1041,27 +1054,27 @@ class MGMObject {
         }
 
         this._mgm = params._mgm
+        this.collider = {}
 
         if (!params.isClone && this.init) this.init(this)
 
         if (!params.isClone) this.name = params.name
-        if (params.isClone)
-            for (const j in params) {
-                if (j != '_object')
-                    this[j] = params[j]
-            }
+        else for (const j in params)
+            if (j != '_object')
+                this[j] = params[j]
 
         this._goStart = true
 
         this._init()
 
+        if (!this.nocont) this._mgm.objects.push(this)
+        else this._mgm.noconts.push(this)
     }
 
     _init() {
 
         this._mgm.objectsId++
         this.objectId = this._mgm.objectsId
-        this._nocont = false
 
 
         if (!this.x) this.x = 0
@@ -1078,16 +1091,16 @@ class MGMObject {
         if (this.size == undefined) this.size = 1
         if (this.alpha == undefined) this.alpha = 1
 
-        if (this.pivotY === undefined) this.pivotY = 0
-        if (this.pivotX === undefined) this.pivotX = 0
 
         if (this.pics && !this.pic) this.pic = this._mgm._firstJ(this.pics)
 
         if (!this.collider) this.collider = {}
-        if (this.collider.width == undefined) this.collider.width = 1
-        if (this.collider.height == undefined) this.collider.height = 1
-        if (this.collider.x == undefined) this.collider.x = 0
-        if (this.collider.y == undefined) this.collider.y = 0
+        else {
+            if (this.collider.width == undefined) this.collider.width = 1
+            if (this.collider.height == undefined) this.collider.height = 1
+            if (this.collider.x == undefined) this.collider.x = 0
+            if (this.collider.y == undefined) this.collider.y = 0
+        }
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 0
@@ -1129,34 +1142,12 @@ class MGMObject {
             delete this._goStart
         }
         this._waitsWork()
-        this._setNocont()
         if (this.active === false) return
         if (this.update) this.update(this)
         this._work()
     }
 
 
-    _setNocont() {
-        if (this.nocont && !this._nocont) {
-            this._nocont = true
-            let i = 0
-            for (const obj of this._mgm.objects) {
-                if (obj.objectId == this.objectId)
-                    this._mgm.objects.splice(i, 1)
-                i++
-            }
-            this._mgm.noconts.push(this)
-        } else if (!this.nocont && this._nocont) {
-            this._nocont = false
-            let i = 0
-            for (const obj of this._mgm.objects) {
-                if (obj.objectId == this.objectId)
-                    this._mgm.noconts.splice(i, 1)
-                i++
-            }
-            this._mgm.objects.push(this)
-        }
-    }
 
     _work() {
         if (this.angle < -180) this.angle += 360
@@ -1181,22 +1172,29 @@ class MGMObject {
         this._width = this.width * this.size
         this._height = this.height * this.size
 
-        if (this.physics && this.mass) {
-            if (!this.onGround) this.gravVel -= 0.5
-            this.y += this.mass * this.gravVel
-            this.onGround = false
+        if (!this.nocont) {
+            if (this.physics && this.mass) {
+                if (!this.onGround) this.gravVel -= 0.5
+                this.y += this.mass * this.gravVel
+                this.onGround = false
+            }
+
+            this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
+            this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
+            this.collider._pivotYB = this._height * this.collider.height / 2 - this._height * this.collider.y
+            this.collider._pivotYT = this._height * this.collider.height / 2 + this._height * this.collider.y
+            this.collider.left = this.x - this.collider._pivotXL
+            this.collider.right = this.x + this.collider._pivotXR
+            this.collider.top = this.y + this.collider._pivotYT
+            this.collider.bottom = this.y - this.collider._pivotYB
+
+            if (this.bounce) {
+                if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = 180 - this.angle
+                if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = -this.angle
+            }
+
+            this._physicWork()
         }
-
-        this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
-        this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
-        this.collider._pivotYB = this._height * this.collider.height / 2 + this._height * this.collider.y
-        this.collider._pivotYT = this._height * this.collider.height / 2 - this._height * this.collider.y
-        this.collider.left = this.x - this.collider._pivotXL
-        this.collider.right = this.x + this.collider._pivotXR
-        this.collider.top = this.y + this.collider._pivotYT
-        this.collider.bottom = this.y - this.collider._pivotYB
-
-        this._physicWork()
 
         if (this.flipX)
             if (this.angle > -90 && this.angle < 90) this.flipXV = 1
@@ -1204,11 +1202,6 @@ class MGMObject {
         if (this.flipY)
             if (this.angle > 0) this.flipYV = 1
             else this.flipYV = -1
-
-        if (this.bounce) {
-            if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = 180 - this.angle
-            if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = -this.angle
-        }
     }
 
     _physicWork() {
@@ -1291,8 +1284,8 @@ class MGMObject {
         if (this.effect) this._mgm.context.filter = this.effect
 
         if (this._image) this._mgm.context.drawImage(this._image,
-            -this._width / 2 + this._width * this.pivotX,
-            -this._height / 2 - this._height * this.pivotY,
+            -this._width / 2,
+            -this._height / 2,
             this._width, this._height)
 
         this._drawPrimitives(1)
@@ -1367,7 +1360,7 @@ class MGMObject {
         if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
         if (prm.color) this._mgm.context.fillStyle = prm.color
         else this._mgm.context.fillStyle = this._mgm._defaultContext.fontColor
-        prm.fontSize = prm.size + 'px' || this._mgm._defaultContext.fontSize
+        prm.fontSize = (prm.size || this._mgm._defaultContext.fontSize) + 'px'
         if (!prm.family) prm.family = this._mgm._defaultContext.fontFamily
         if (!prm.weight) prm.weight = this._mgm._defaultContext.fontWeight
         if (prm.align) this._mgm.context.textAlign = prm.align
