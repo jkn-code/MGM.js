@@ -18,284 +18,21 @@ class MGM {
     _init() {
         if (this.params.autorun !== false) this.params.autorun = true
 
-        {
-            const style = document.createElement('style')
-            style.type = 'text/css'
-            const css = `
-            .mgm-canvas {
-                1border: 10px solid red;
-            }
-            `
-            style.appendChild(document.createTextNode(css))
-            document.head.appendChild(style)
-        }
 
-        {
-            let viewPortTag = document.createElement('meta');
-            viewPortTag.id = "viewport";
-            viewPortTag.name = "viewport";
-            viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
-            document.head.appendChild(viewPortTag)
+        this._initHTML()
+        this._initCanvasPlane()
+        this._initMobileControl()
+        this._initMouse()
+        this._initKeys()
 
-            document.body.style.backgroundColor = this.params.bodyColor || '#eee'
-            document.body.style.fontFamily = this.params.textFont || 'Tahoma';
-            document.body.style.color = this.params.textColor || '#555'
-            document.body.style.overflow = 'hidden'
-            document.body.style.userSelect = 'none'
-            document.body.style.fontSize = '10px'
-            document.body.style.margin = '0'
-
-
-            if (this.params.icon) {
-                let link = document.createElement('link')
-                link.rel = 'icon'
-                link.href = this.params.icon
-                document.head.appendChild(link)
-            }
-            if (this.params.name) {
-                if (!document.createElement('title')) document.createElement('title')
-                document.title = this.params.name
-            }
-
-            this.curtain = document.createElement('div')
-            document.body.appendChild(this.curtain)
-            this.curtain.classList.add('mgm-curtain')
-            this.curtain.style.cssText = `
-                position: absolute; 
-                top: 0; 
-                left: 0; 
-                height: 100vh; 
-                width: 100vw; 
-                background: ` + document.body.style.backgroundColor + `; 
-                z-index: 999; 
-                cursor: pointer;
-                display: flex; 
-                align-items: center; 
-                justify-content: center;`
-            this.curtainIn = document.createElement('div')
-            this.curtain.appendChild(this.curtainIn)
-            this.curtainIn.style.cssText = 'text-align: center;'
-            this.curtainIn.innerHTML = 'Loading'
-        }
+        this._resizeWin()
+        window.onresize = () => this._resizeWin()
 
         if (this.params.borders) {
             this.params.borders = this.params.borders.split(',')
             if (this.params.borders[0]) this.params.borders[0] = this.params.borders[0].trim()
             if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
         }
-
-        {
-            this.canvas = document.createElement('canvas')
-            this.canvas.classList.add('mgm-canvas')
-            this.canvas.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);`
-            if (this.params.pixel) this.canvas.style.cssText += 'image-rendering: pixelated; image-rendering: crisp-edges;'
-
-            this._defaultContext = {
-                textAlign: 'left',
-                fontColor: '#000',
-                fontSize: '20px',
-                fontFamily: 'Tahoma',
-                fontWeight: 'normal',
-            }
-            this.context = this.canvas.getContext('2d')
-            this.context.font = '48px serif'
-            if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
-            document.body.appendChild(this.canvas)
-
-            if (this.params.canvasFilter) this.canvas.style.filter = this.params.canvasFilter
-
-            this.plane = document.createElement('div')
-            this.plane.classList.add('mgm-plane')
-            this.plane.style.cssText = 'display: flex; align-items: center; justify-content: center; position: absolute;'
-            document.body.appendChild(this.plane)
-
-            this._resizeWin()
-            window.onresize = () => this._resizeWin()
-
-            let amgm = document.querySelectorAll('.mgm')
-            for (const e of amgm)
-                this.plane.appendChild(e)
-
-            this._crtHtmlId(this.plane)
-
-            this._htmls = []
-            for (const e of amgm) {
-                const cpos = e.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
-                this._htmls.push({
-                    el: e,
-                    x1: left,
-                    y1: top,
-                    x2: left + cpos.width,
-                    y2: top + cpos.height,
-                })
-            }
-        }
-
-
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        if (this.isMobile) {
-            this.touch = {}
-            this.touches = []
-            this._touchBtns = []
-            this._touchSticks = []
-
-            const toushFn = e => {
-                this.touches = e.touches
-                for (let i = 0; i < this.touches.length; i++) {
-                    const ti = this.touches[i]
-                    ti.px = ti.clientX - this.plane.cpos.left
-                    ti.py = ti.clientY - this.plane.cpos.top
-                    ti.x = ti.px / this.kfHeight - this.canvCX + this.camera.x
-                    ti.y = -ti.py / this.kfHeight + this.canvCY + this.camera.y
-                }
-                if (this.touches[0]) {
-                    this.touch.down = true
-                    this.touch.x = this.touches[0].x
-                    this.touch.y = this.touches[0].y
-                    this.touch.px = this.touches[0].px
-                    this.touch.py = this.touches[0].py
-                    this.touch.wx = this.touches[0].clientX
-                    this.touch.wy = this.touches[0].clientY
-                } else {
-                    this.touch.down = false
-                }
-            }
-
-            document.addEventListener("contextmenu", e => e.preventDefault())
-            document.addEventListener("touchstart", toushFn)
-            document.addEventListener("touchend", toushFn)
-            document.addEventListener("touchmove", toushFn)
-
-            const color = this.params.mobileColor || 'gray'
-            const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
-            let control = this.params.mobileControl || 'stickL, br1, br2, br3, br4'
-            if (this.params.mobileControl === false) control = ''
-            let cm = control.split(',')
-            cm.forEach(c => {
-                const name = c.trim()
-
-                let bcrd = ''
-                if (name == 'br1') bcrd = 'right: 20px; bottom: 40px;'
-                if (name == 'br2') bcrd = 'right: 20px; bottom: 120px;'
-                if (name == 'br3') bcrd = 'right: 100px; bottom: 40px;'
-                if (name == 'br4') bcrd = 'right: 100px; bottom: 120px;'
-                if (name == 'bl1') bcrd = 'left: 20px; bottom: 40px;'
-                if (name == 'bl2') bcrd = 'left: 20px; bottom: 120px;'
-                if (name == 'bl3') bcrd = 'left: 100px; bottom: 40px;'
-                if (name == 'bl4') bcrd = 'left: 100px; bottom: 120px;'
-                if (name == 'bc1') bcrd = 'left: calc(50% - 32px); bottom: 40px;'
-                if (name == 'bc2') bcrd = 'left: calc(50% - 32px); bottom: 120px;'
-
-                if (bcrd != '') {
-                    const btn = document.createElement('div')
-                    btn.style.cssText = styleBtn + bcrd + 'width: 60px; height: 60px; opacity: 0.3;'
-                    document.body.appendChild(btn)
-                    this.touch[name] = false
-                    const cpos = btn.getBoundingClientRect()
-                    const left = cpos.left - this.plane.cpos.left
-                    const top = cpos.top - this.plane.cpos.top
-                    this._touchBtns.push({
-                        el: btn,
-                        name: name,
-                        x1: left,
-                        y1: top,
-                        x2: left + cpos.width,
-                        y2: top + cpos.height,
-                    })
-                }
-
-                let bst = ''
-                if (name == 'stickL') bst = 'left: 20px; bottom: 40px;'
-                if (name == 'stickR') bst = 'right: 20px; bottom: 40px;'
-
-                if (bst != '') {
-                    this.touch[name] = {
-                        down: false,
-                        angle: 0,
-                    }
-                    const stick = document.createElement('div')
-                    stick.style.cssText = styleBtn + bst + ' width: 120px; height: 120px; opacity: 0.3;'
-                    document.body.appendChild(stick)
-                    this.touch[name] = false
-                    const cpos = stick.getBoundingClientRect()
-                    const left = cpos.left - this.plane.cpos.left
-                    const top = cpos.top - this.plane.cpos.top
-                    this._touchSticks.push({
-                        el: stick,
-                        name: name,
-                        x1: left,
-                        y1: top,
-                        x2: left + cpos.width,
-                        y2: top + cpos.height,
-                        px: left + 60,
-                        py: top + 60,
-                        d1: 20,
-                        d2: 60,
-                    })
-                }
-            })
-        }
-
-
-
-        if (!this.isMobile) {
-            this.mouse = {}
-            this.plane.onmousemove = e => {
-                this.mouse.px = e.pageX - this.plane.cpos.left
-                this.mouse.py = e.pageY - this.plane.cpos.top
-                this.mouse.x = this.mouse.px / this.kfHeight - this.canvCX + this.camera.x
-                this.mouse.y = -this.mouse.py / this.kfHeight + this.canvCY + this.camera.y
-            }
-            this.plane.onmousedown = e => {
-                this.mouse.down = true
-                this.mouse.up = false
-            }
-            this.plane.onmouseup = e => {
-                this.mouse.down = false
-                this.mouse.up = true
-            }
-        }
-
-
-
-        {
-            this.keys = {}
-            this.press = {}
-            this.pressK = {}
-            /* let s = {}
-            for (let i = 48; i <= 57; i++)
-                s[i] = 'n' + (String.fromCharCode(i)).toLowerCase()
-            console.log(s);*/
-            let keyNums = {
-                38: 'up', 40: 'down', 37: 'left', 39: 'right',
-                32: 'space', 13: 'enter', 27: 'escape', 16: 'shift', 17: 'ctrl', 8: 'backspace',
-                65: 'a', 66: 'b', 67: 'c', 68: 'd', 69: 'e', 70: 'f', 71: 'g', 72: 'h', 73: 'i', 74: 'j', 75: 'k', 76: 'l', 77: 'm', 78: 'n', 79: 'o', 80: 'p', 81: 'q', 82: 'r', 83: 's', 84: 't', 85: 'u', 86: 'v', 87: 'w', 88: 'x', 89: 'y', 90: 'z',
-                48: 'n0', 49: 'n1', 50: 'n2', 51: 'n3', 52: 'n4', 53: 'n5', 54: 'n6', 55: 'n7', 56: 'n8', 57: 'n9',
-            }
-            for (let j in keyNums) this.keys[keyNums[j]] = false
-            for (let j in keyNums) this.press[keyNums[j]] = false
-            for (let j in keyNums) this.pressK[keyNums[j]] = true
-            document.onkeydown = (e) => {
-                e = e || window.event
-                let k = keyNums[e.keyCode]
-                this.keys[k] = true
-
-                if (this.pressK[k]) {
-                    this.press[k] = true
-                    this.pressK[k] = false
-                    setTimeout(() => {
-                        this.pressK[k] = true
-                    }, 100)
-                }
-            }
-            document.onkeyup = (e) => {
-                e = e || window.event
-                this.keys[keyNums[e.keyCode]] = false
-            }
-        }
-
 
         if (location.protocol != 'file:')
             this.audioCtx = new AudioContext()
@@ -304,15 +41,17 @@ class MGM {
         let plOk = true, plTxt
         if (!this.params.platform) this.params.platform = 'pc'
         if (this.isMobile && !this.params.platform.includes('mobile')) {
-            plTxt = 'Use only on PC'
+            plTxt = this.params.platformError || 'Use only on PC'
             plOk = false
         }
         if (!this.isMobile && !this.params.platform.includes('pc')) {
-            plTxt = 'Use only on mobile'
+            plTxt = this.params.platformError || 'Use only on mobile'
             plOk = false
         }
-
-        if (!plOk) this.curtainIn.innerHTML = plTxt
+        if (!plOk) {
+            this.curtainIn.innerHTML = plTxt
+            return
+        }
 
         this.fps = 0
         this._fpsSch = 0
@@ -325,6 +64,298 @@ class MGM {
 
         console.log('init ok');
         this._loadResources()
+    }
+
+
+    _initHTML() {
+        let viewPortTag = document.createElement('meta');
+        viewPortTag.id = "viewport";
+        viewPortTag.name = "viewport";
+        viewPortTag.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0";
+        document.head.appendChild(viewPortTag)
+
+        document.body.style.cssText = `
+            background-color: `+ (this.params.bodyColor || '#eee') + `;
+            font-family: `+ (this.params.textFont || 'Tahoma') + `;
+            color: `+ (this.params.textColor || '#555') + `;
+            font-size: 10px;
+            overflow: hidden;
+            user-select: none;
+            margin: 0px;
+        `
+
+        this._consDiv = document.createElement('div')
+        this._consDiv.style.cssText = `
+            position: absolute; 
+            z-index: 999; 
+            top: 0px; 
+            left: 0px; 
+            max-height: 50vh; 
+            max-width: 50vw; 
+            min-width: 150px;
+            overflow-y: auto; 
+            opacity: 0.5; 
+            display: `+ (this.params.log ? 'block' : 'none') + `; 
+            padding: 10px;
+            font-size: 11px; 
+            color: #000;
+            background-color: #fffa;
+            word-wrap: break-word;
+        `
+        document.body.appendChild(this._consDiv)
+        this._logs = []
+
+        if (this.params.icon) {
+            let link = document.createElement('link')
+            link.rel = 'icon'
+            link.href = this.params.icon
+            document.head.appendChild(link)
+        }
+        if (this.params.name) {
+            if (!document.createElement('title')) document.createElement('title')
+            document.title = this.params.name
+        }
+
+
+        this.curtain = document.createElement('div')
+        document.body.appendChild(this.curtain)
+        this.curtain.classList.add('mgm-curtain')
+        this.curtain.style.cssText = `
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            height: 100vh; 
+            width: 100vw; 
+            background: ` + document.body.style.backgroundColor + `; 
+            z-index: 999; 
+            cursor: pointer;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;`
+        this.curtainIn = document.createElement('div')
+        this.curtain.appendChild(this.curtainIn)
+        this.curtainIn.style.cssText = 'text-align: center;'
+        this.curtainIn.innerHTML = 'Loading'
+    }
+
+
+    _initCanvasPlane() {
+        this.canvas = document.createElement('canvas')
+        this.canvas.classList.add('mgm-canvas')
+        this.canvas.style.cssText = `
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+        `
+        if (this.params.pixel) this.canvas.style.cssText += 'image-rendering: pixelated; image-rendering: crisp-edges;'
+
+        this._defaultContext = {
+            textAlign: 'left',
+            fontColor: '#000',
+            fontSize: '20px',
+            fontFamily: 'Tahoma',
+            fontWeight: 'normal',
+        }
+        this.context = this.canvas.getContext('2d')
+        this.context.font = '48px serif'
+        if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
+        document.body.appendChild(this.canvas)
+
+        if (this.params.canvasFilter) this.canvas.style.filter = this.params.canvasFilter
+
+        this.plane = document.createElement('div')
+        this.plane.classList.add('mgm-plane')
+        this.plane.style.cssText = `
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: absolute;
+        `
+        document.body.appendChild(this.plane)
+
+        let allMgms = document.querySelectorAll('.mgm')
+        for (const e of allMgms)
+            this.plane.appendChild(e)
+
+        this._crtHtmlId(this.plane)
+        this._resizeWin()
+
+        this._htmls = []
+        for (const e of allMgms) {
+            const cpos = e.getBoundingClientRect()
+            const left = cpos.left - this.plane.cpos.left
+            const top = cpos.top - this.plane.cpos.top
+            this._htmls.push({
+                el: e,
+                x1: left,
+                y1: top,
+                x2: left + cpos.width,
+                y2: top + cpos.height,
+            })
+        }
+    }
+
+
+    _initMobileControl() {
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        if (!this.isMobile) return
+
+        this.touch = {}
+        this.touches = []
+        this._touchBtns = []
+        this._touchSticks = []
+
+        const toushFn = e => {
+            this.touches = e.touches
+            for (let i = 0; i < this.touches.length; i++) {
+                const ti = this.touches[i]
+                ti.px = ti.clientX - this.plane.cpos.left
+                ti.py = ti.clientY - this.plane.cpos.top
+                ti.x = ti.px / this.kfHeight - this.canvCX + this.camera.x
+                ti.y = -ti.py / this.kfHeight + this.canvCY + this.camera.y
+            }
+            if (this.touches[0]) {
+                this.touch.down = true
+                this.touch.x = this.touches[0].x
+                this.touch.y = this.touches[0].y
+                this.touch.px = this.touches[0].px
+                this.touch.py = this.touches[0].py
+                this.touch.wx = this.touches[0].clientX
+                this.touch.wy = this.touches[0].clientY
+            } else {
+                this.touch.down = false
+            }
+        }
+
+        document.addEventListener("contextmenu", e => e.preventDefault())
+        document.addEventListener("touchstart", toushFn)
+        document.addEventListener("touchend", toushFn)
+        document.addEventListener("touchmove", toushFn)
+
+        const color = this.params.mobileColor || 'gray'
+        const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
+        let control = this.params.mobileControl || 'stickL, br1, br2, br3, br4'
+        if (this.params.mobileControl === false) control = ''
+        let controls = control.split(',')
+        controls.forEach(c => {
+            const name = c.trim()
+
+            let bcrd = ''
+            if (name == 'br1') bcrd = 'right: 20px; bottom: 40px;'
+            if (name == 'br2') bcrd = 'right: 20px; bottom: 120px;'
+            if (name == 'br3') bcrd = 'right: 100px; bottom: 40px;'
+            if (name == 'br4') bcrd = 'right: 100px; bottom: 120px;'
+            if (name == 'bl1') bcrd = 'left: 20px; bottom: 40px;'
+            if (name == 'bl2') bcrd = 'left: 20px; bottom: 120px;'
+            if (name == 'bl3') bcrd = 'left: 100px; bottom: 40px;'
+            if (name == 'bl4') bcrd = 'left: 100px; bottom: 120px;'
+            if (name == 'bc1') bcrd = 'left: calc(50% - 32px); bottom: 40px;'
+            if (name == 'bc2') bcrd = 'left: calc(50% - 32px); bottom: 120px;'
+
+            if (bcrd != '') {
+                const btn = document.createElement('div')
+                btn.style.cssText = styleBtn + bcrd + 'width: 60px; height: 60px; opacity: 0.3;'
+                document.body.appendChild(btn)
+                this.touch[name] = false
+                const cpos = btn.getBoundingClientRect()
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                this._touchBtns.push({
+                    el: btn,
+                    name: name,
+                    x1: left,
+                    y1: top,
+                    x2: left + cpos.width,
+                    y2: top + cpos.height,
+                })
+            }
+
+            let bst = ''
+            if (name == 'stickL') bst = 'left: 20px; bottom: 40px;'
+            if (name == 'stickR') bst = 'right: 20px; bottom: 40px;'
+
+            if (bst != '') {
+                this.touch[name] = {
+                    down: false,
+                    angle: 0,
+                }
+                const stick = document.createElement('div')
+                stick.style.cssText = styleBtn + bst + ' width: 120px; height: 120px; opacity: 0.3;'
+                document.body.appendChild(stick)
+                this.touch[name] = false
+                const cpos = stick.getBoundingClientRect()
+                const left = cpos.left - this.plane.cpos.left
+                const top = cpos.top - this.plane.cpos.top
+                this._touchSticks.push({
+                    el: stick,
+                    name: name,
+                    x1: left,
+                    y1: top,
+                    x2: left + cpos.width,
+                    y2: top + cpos.height,
+                    px: left + 60,
+                    py: top + 60,
+                    d1: 20,
+                    d2: 60,
+                })
+            }
+        })
+    }
+
+    _initMouse() {
+        if (this.isMobile) return
+        this.mouse = {}
+        this.plane.onmousemove = e => {
+            this.mouse.px = e.pageX - this.plane.cpos.left
+            this.mouse.py = e.pageY - this.plane.cpos.top
+            this.mouse.x = this.mouse.px / this.kfHeight - this.canvCX + this.camera.x
+            this.mouse.y = -this.mouse.py / this.kfHeight + this.canvCY + this.camera.y
+        }
+        this.plane.onmousedown = e => {
+            this.mouse.down = true
+            this.mouse.up = false
+        }
+        this.plane.onmouseup = e => {
+            this.mouse.down = false
+            this.mouse.up = true
+        }
+    }
+
+    _initKeys() {
+        this.keys = {}
+        this.press = {}
+        this.pressK = {}
+        /* let s = {}
+        for (let i = 48; i <= 57; i++)
+            s[i] = 'n' + (String.fromCharCode(i)).toLowerCase()
+        console.log(s);*/
+        let keyNums = {
+            38: 'up', 40: 'down', 37: 'left', 39: 'right',
+            32: 'space', 13: 'enter', 27: 'escape', 16: 'shift', 17: 'ctrl', 8: 'backspace',
+            65: 'a', 66: 'b', 67: 'c', 68: 'd', 69: 'e', 70: 'f', 71: 'g', 72: 'h', 73: 'i', 74: 'j', 75: 'k', 76: 'l', 77: 'm', 78: 'n', 79: 'o', 80: 'p', 81: 'q', 82: 'r', 83: 's', 84: 't', 85: 'u', 86: 'v', 87: 'w', 88: 'x', 89: 'y', 90: 'z',
+            48: 'n0', 49: 'n1', 50: 'n2', 51: 'n3', 52: 'n4', 53: 'n5', 54: 'n6', 55: 'n7', 56: 'n8', 57: 'n9',
+        }
+        for (let j in keyNums) this.keys[keyNums[j]] = false
+        for (let j in keyNums) this.press[keyNums[j]] = false
+        for (let j in keyNums) this.pressK[keyNums[j]] = true
+        document.onkeydown = (e) => {
+            e = e || window.event
+            let k = keyNums[e.keyCode]
+            this.keys[k] = true
+
+            if (this.pressK[k]) {
+                this.press[k] = true
+                this.pressK[k] = false
+                setTimeout(() => {
+                    this.pressK[k] = true
+                }, 100)
+            }
+        }
+        document.onkeyup = (e) => {
+            e = e || window.event
+            this.keys[keyNums[e.keyCode]] = false
+        }
     }
 
 
@@ -621,7 +652,6 @@ class MGM {
         let joy = false
         let html = false
 
-        cons.innerHTML = JSON.stringify(this.touches)
         for (let i = 0; i < this.touches.length; i++) {
             const ti = this.touches[i]
             this._touchBtns.forEach(btn => {
@@ -663,7 +693,8 @@ class MGM {
     }
 
     _loop() {
-        const time = Date.now()
+        this._consDiv.innerHTML = ''
+
         this._touchLoop()
         this._mouseLoop()
 
@@ -707,9 +738,16 @@ class MGM {
         for (let j in this.press) this.press[j] = false
         this.frame++
         this._fpsSch++
+
+        if (this.params.log) {
+            this._logs = this._logs.splice(-300)
+            this._consDiv.innerHTML = '> ' + this._logs.join('<br>> ')
+                + '<br><br>fps: ' + this.fps + ', frame: ' + this.frame
+            this._consDiv.scrollTop = 10000
+        }
+        
         if (this.RUN) requestAnimationFrame(() => this._loop())
         else this._soundsStop()
-
     }
 
     _soundsStop() {
@@ -952,6 +990,11 @@ class MGM {
     _loadMap(map) {
         console.log('_loadMap ', map);
     }
+
+    log(s) {
+        this._logs.push(s)
+    }
+
 }
 
 
@@ -1091,7 +1134,7 @@ class MGMObject {
         if (this.update) this.update(this)
         this._work()
     }
-    
+
 
     _setNocont() {
         if (this.nocont && !this._nocont) {
