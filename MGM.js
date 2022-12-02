@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.4');
+console.log('MGM 1.5');
 
 class MGM {
     constructor(params) {
@@ -122,8 +122,9 @@ class MGM {
         this.curtain.classList.add('mgm-curtain')
         this.curtain.style.cssText = `
             position: absolute; 
-            top: 0; 
-            left: 0; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
             height: 100vh; 
             width: 100vw; 
             background: ` + document.body.style.backgroundColor + `; 
@@ -410,7 +411,7 @@ class MGM {
         }
 
         let loadWait = setInterval(() => {
-            this.curtainIn.innerHTML = 'Loading<br><br>' + this._build.resLoad + " / " + this._build.resAll
+            this.curtainIn.innerHTML = '<b>MGM.js</b><br><br><br>Loading<br><br>' + this._build.resLoad + " / " + this._build.resAll
             if (this._build.resAll == this._build.resLoad) {
                 clearInterval(loadWait)
                 console.log('load ok');
@@ -421,7 +422,7 @@ class MGM {
                         this.curtainIn.innerHTML = this.params.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
                         this.curtain.onclick = () => this._run()
                     }
-                }, 100)
+                }, 1000)
             }
         }, 10)
     }
@@ -585,10 +586,6 @@ class MGM {
         this.plane.style.width = cpos.width + 'px'
         this.plane.style.height = cpos.height + 'px'
 
-        this.curtain.style.top = cpos.top + 'px'
-        this.curtain.style.left = (cpos.left - 1) + 'px'
-        this.curtain.style.width = (cpos.width + 1) + 'px'
-        this.curtain.style.height = cpos.height + 'px'
 
         document.body.style.fontSize = (this.params.fontSize || (h / 40)) + 'px'
 
@@ -1054,7 +1051,7 @@ class MGMObject {
         }
 
         this._mgm = params._mgm
-        this.collider = {}
+        if (!this.collider) this.collider = {}
 
         if (!params.isClone && this.init) this.init(this)
 
@@ -1094,13 +1091,10 @@ class MGMObject {
 
         if (this.pics && !this.pic) this.pic = this._mgm._firstJ(this.pics)
 
-        if (!this.collider) this.collider = {}
-        else {
-            if (this.collider.width == undefined) this.collider.width = 1
-            if (this.collider.height == undefined) this.collider.height = 1
-            if (this.collider.x == undefined) this.collider.x = 0
-            if (this.collider.y == undefined) this.collider.y = 0
-        }
+        if (this.collider.width == undefined) this.collider.width = 1
+        if (this.collider.height == undefined) this.collider.height = 1
+        if (this.collider.x == undefined) this.collider.x = 0
+        if (this.collider.y == undefined) this.collider.y = 0
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 0
@@ -1178,7 +1172,6 @@ class MGMObject {
                 this.y += this.mass * this.gravVel
                 this.onGround = false
             }
-
             this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
             this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
             this.collider._pivotYB = this._height * this.collider.height / 2 - this._height * this.collider.y
