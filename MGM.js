@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.5');
+console.log('MGM 1.6');
 
 class MGM {
     constructor(params) {
@@ -394,9 +394,6 @@ class MGM {
             if (this.object[j].sounds)
                 for (let k in this.object[j].sounds)
                     this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
-            else
-                if (this.object[j].sound)
-                    this.object[j].sound = this._loadSound(this.object[j].sound)
 
         if (location.protocol != 'file:') {
             this._audioCtxOk = true
@@ -405,9 +402,7 @@ class MGM {
                     if (!this.object[j]._sounds) this.object[j]._sounds = {}
                     for (let k in this.object[j].sounds)
                         this.object[j]._sounds[k] = this._loadSoundCtx(this.object[j].sounds[k], j, k)
-                } else
-                    if (this.object[j].sound)
-                        this.object[j]._sound = this._loadSoundCtx(this.object[j].sound, j)
+                }
         }
 
         let loadWait = setInterval(() => {
@@ -1042,7 +1037,7 @@ class MGMObject {
         for (const j in obj) {
             const v = obj[j]
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
-                j == 'sound' || j == '_sounds' || j == '_sound' ||
+                j == 'sounds' || j == '_sounds' ||
                 j == 'name' || j == '_mgm' || j == '_obj' ||
                 typeof v == 'function') this[j] = v
             else {
@@ -1361,6 +1356,7 @@ class MGMObject {
         this._mgm.context.font = prm.weight + ' ' + prm.fontSize + ' ' + prm.family
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
+        if (prm.text === undefined) prm.text = ''
         this._mgm.context.fillText(prm.text, prm.x, -prm.y)
     }
 
@@ -1702,6 +1698,7 @@ class MGMObject {
 
     _getSound(prm) {
         let snd, snds, sound
+
         if (!this._mgm._audioCtxOk) {
             snd = this.sound
             snds = this.sounds
@@ -1709,18 +1706,23 @@ class MGMObject {
             snd = this._sound
             snds = this._sounds
         }
+        
         if (!prm.name) {
             if (this.sound) sound = snd
             else if (snds) sound = this._mgm._firstV(snds)
         } else sound = snds[prm.name]
+
         return sound
     }
 
     _soundPlay(prm, sound) {
         if (!prm.loop) {
-            if (prm.toend) if (sound.currentTime == 0 || sound.currentTime >= sound.duration) this._soundStart(sound, prm.volume)
+            if (prm.toend)
+                if (sound.currentTime == 0 || sound.currentTime >= sound.duration)
+                    this._soundStart(sound, prm.volume)
             if (!prm.toend) this._soundStart(sound, prm.volume)
-        } else {
+        } 
+        else {
             if (!sound.mloop) {
                 this._soundStart(sound, prm.volume)
                 sound.mloop = setInterval(() => this._soundStart(sound, prm.volume), sound.duration * 1000)
