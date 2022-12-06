@@ -414,7 +414,7 @@ class MGM {
                     this._build.isLoad = true
                     if (this.params.autorun !== false) this._run()
                     else {
-                        this.curtainIn.innerHTML = this.params.startTxt || '<center><b>Start</b><br><br><small>click to run</small></center>'
+                        this.curtainIn.innerHTML = this.params.startText || '<center><b>Start1</b><br><br><small>click to run</small></center>'
                         this.curtain.onclick = () => this._run()
                     }
                 }, 1000)
