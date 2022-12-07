@@ -34,9 +34,11 @@ class MGM {
             if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
         }
 
-        if (location.protocol != 'file:')
-            this.audioCtx = new AudioContext()
 
+        if (location.protocol != 'file:') {
+            this.audioCtx = new AudioContext()
+            this._audioCtxOk = true
+        }
 
         let plOk = true, plTxt
         if (!this.params.platform) this.params.platform = 'pc'
@@ -61,6 +63,7 @@ class MGM {
         }, 1000)
 
         if (this.params.editor) this._editor = new MGMMapEditor({ mgm: this })
+
 
         console.log('init ok');
         this._loadResources()
@@ -395,8 +398,7 @@ class MGM {
                 for (let k in this.object[j].sounds)
                     this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
 
-        if (location.protocol != 'file:') {
-            this._audioCtxOk = true
+        if (this._audioCtxOk) {
             for (let j in this.object)
                 if (this.object[j].sounds) {
                     if (!this.object[j]._sounds) this.object[j]._sounds = {}
@@ -425,7 +427,7 @@ class MGM {
 
     _run() {
         console.log('run');
-        if (this.params.fullscreen && this.params.autorun !== false)
+        if (this.params.fullscreen && this.params.autorun === false)
             this._toggleFullScreen()
         this.curtainIn.innerHTML = ''
         this.curtain.style.display = 'none'
@@ -435,6 +437,8 @@ class MGM {
         this.RUN = true
         this.zList = []
         this.objectsId = 0
+        this._resizeWin()
+
         setTimeout(() => {
             this._initObjs()
             if (this.params.editor) this._editor.loadObj()
@@ -538,8 +542,6 @@ class MGM {
                     buffer: buffer,
                     end: true,
                 }
-
-
 
                 if (j && k) this.object[j]._sounds[k] = sound
                 if (j && !k) this.object[j]._sound = sound
@@ -1700,16 +1702,13 @@ class MGMObject {
         let snd, snds, sound
 
         if (!this._mgm._audioCtxOk) {
-            snd = this.sound
             snds = this.sounds
         } else {
-            snd = this._sound
             snds = this._sounds
         }
-        
+
         if (!prm.name) {
-            if (this.sound) sound = snd
-            else if (snds) sound = this._mgm._firstV(snds)
+            sound = this._mgm._firstV(snds)
         } else sound = snds[prm.name]
 
         return sound
@@ -1721,7 +1720,7 @@ class MGMObject {
                 if (sound.currentTime == 0 || sound.currentTime >= sound.duration)
                     this._soundStart(sound, prm.volume)
             if (!prm.toend) this._soundStart(sound, prm.volume)
-        } 
+        }
         else {
             if (!sound.mloop) {
                 this._soundStart(sound, prm.volume)
@@ -1760,12 +1759,14 @@ class MGMObject {
         const panNode = this._mgm.audioCtx.createStereoPanner()
         panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
         panNode.connect(this._mgm.audioCtx.destination)
+        sound.panNode = panNode
 
-        let gain = this._mgm.audioCtx.createGain()
-        gain.gain.value = prm.volume
-        gain.connect(panNode)
-        sound.source.connect(gain)
+        let gainNode = this._mgm.audioCtx.createGain()
+        gainNode.gain.value = prm.volume
+        gainNode.connect(panNode)
+        sound.source.connect(gainNode)
         if (prm.loop) sound.source.loop = true
+        sound.gainNode = gainNode
 
         sound.source.onended = () => {
             sound.end = true
@@ -1782,6 +1783,16 @@ class MGMObject {
         }
     }
 
+    soundPrm(prm) {
+        if (prm.name === undefined) return
+        if (prm.volume !== undefined) {
+            if (this._mgm._audioCtxOk) this._sounds[prm.name].gainNode.gain.value = prm.volume
+            else this.sounds[prm.name].volume = prm.volume
+        }
+        if (prm.pan !== undefined) {
+            if (this._mgm._audioCtxOk) this._sounds[prm.name].panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
+        }
+    }
 
     soundStopCtx(name) {
         const sound = this._getSound(prm)
@@ -1894,6 +1905,19 @@ class MGMObject {
         if (this.onGround) this.gravVel = v
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
