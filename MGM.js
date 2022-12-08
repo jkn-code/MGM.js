@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.6');
+console.log('MGM 1.7');
 
 class MGM {
     constructor(params) {
@@ -1765,8 +1765,9 @@ class MGMObject {
         gainNode.gain.value = prm.volume
         gainNode.connect(panNode)
         sound.source.connect(gainNode)
-        if (prm.loop) sound.source.loop = true
         sound.gainNode = gainNode
+        
+        if (prm.loop) sound.source.loop = true
 
         sound.source.onended = () => {
             sound.end = true
