@@ -5,8 +5,8 @@ console.log('MGM 1.7');
 class MGM {
     constructor(params) {
         this.params = params
-        this._build = {}
         this.object = {}
+        this._build = {}
         this.RUN = false
         this.frame = 0
         this.camera = { x: 0, y: 0 }
@@ -17,6 +17,7 @@ class MGM {
 
 
     _init() {
+
         if (this.params.autorun !== false) this.params.autorun = true
 
 
@@ -290,8 +291,8 @@ class MGM {
             }
 
             let bst = ''
-            if (name == 'stickL') bst = 'left: 20px; bottom: 40px;'
-            if (name == 'stickR') bst = 'right: 20px; bottom: 40px;'
+            if (name == 'stickL') bst = 'left: 40px; bottom: 40px;'
+            if (name == 'stickR') bst = 'right: 40px; bottom: 40px;'
 
             if (bst != '') {
                 this.touch[name] = {
@@ -334,6 +335,7 @@ class MGM {
         })
     }
 
+
     _initMouse() {
         if (this.isMobile) return
         this.mouse = {}
@@ -357,10 +359,8 @@ class MGM {
         this.keys = {}
         this.press = {}
         this.pressK = {}
-        /* let s = {}
-        for (let i = 48; i <= 57; i++)
-            s[i] = 'n' + (String.fromCharCode(i)).toLowerCase()
-        console.log(s);*/
+
+
         let keyNums = {
             38: 'up', 40: 'down', 37: 'left', 39: 'right',
             32: 'space', 13: 'enter', 27: 'escape', 16: 'shift', 17: 'ctrl', 8: 'backspace',
@@ -406,12 +406,12 @@ class MGM {
                         this.object[j]._pics[k] = this._loadPic(this.object[j].pic[k])
             }
 
-        for (let j in this.object)
-            if (this.object[j].sounds)
-                for (let k in this.object[j].sounds)
-                    this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
-
-        if (this._audioCtxOk) {
+        if (this._audioCtxOk === undefined) {
+            for (let j in this.object)
+                if (this.object[j].sounds)
+                    for (let k in this.object[j].sounds)
+                        this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
+        } else {
             for (let j in this.object)
                 if (this.object[j].sounds) {
                     if (!this.object[j]._sounds) this.object[j]._sounds = {}
@@ -430,7 +430,9 @@ class MGM {
                     if (this.params.autorun !== false) this._run()
                     else {
                         this.curtainIn.innerHTML = this.params.startText || '<center><b>Start1</b><br><br><small>click to run</small></center>'
-                        this.curtain.onclick = () => this._run()
+                        this.curtain.onclick = () => {
+                            if (!this.STOP) this._run()
+                        }
                     }
                 }, 1000)
             }
@@ -476,6 +478,7 @@ class MGM {
         this.object = {}
         this.objects = []
         this.noconts = []
+        this.camera = { x: 0, y: 0 }
 
         let urls = []
         let scrAll = 0
@@ -488,7 +491,7 @@ class MGM {
             scrAll++
             const s = document.createElement('script')
             document.head.appendChild(s)
-            s.src = u
+            s.src = u + '?' + this.random(111, 999)
             s.onload = () => scrLoad++
         })
 
@@ -547,7 +550,7 @@ class MGM {
         this._build.resAll++
 
         let request = new XMLHttpRequest()
-        request.open('GET', src.src, true)
+        request.open('GET', src, true)
         request.responseType = 'arraybuffer'
         request.onload = () => {
             this.audioCtx.decodeAudioData(request.response, buffer => {
@@ -570,6 +573,7 @@ class MGM {
                 if (j && k) this.object[j]._sounds[k] = sound
                 if (j && !k) this.object[j]._sound = sound
                 this._build.resLoad++
+
             }, function (error) {
                 console.error('decodeAudioData error', error)
             });
@@ -766,7 +770,6 @@ class MGM {
                     obj._draw()
         }
 
-
         for (let j in this.press) this.press[j] = false
         this.frame++
         this._fpsSch++
@@ -804,15 +807,10 @@ class MGM {
                 for (const j in obj._sounds)
                     obj._sounds[j]._setMuted(muted)
         }
-
-        for (const obj of this.noconts) {
+        for (const obj of this.noconts)
             if (obj.sounds)
                 for (const j in obj.sounds)
                     obj.sounds[j].muted = muted
-            if (obj._sounds)
-                for (const j in obj._sounds)
-                    obj._sounds[j]._setMuted(muted)
-        }
     }
 
     _orderY(a, b) {
@@ -962,8 +960,8 @@ class MGM {
         if (this.objects.length > 10000) return
         if (this.noconts.length > 10000) return
         prm._mgm = this
+        if (prm.active !== false) prm.active = true
         const obj = new MGMObject(prm)
-
         return obj
     }
 
@@ -981,11 +979,11 @@ class MGM {
                 if (!prm) ot.push(obj)
                 else if (obj[key] == prm) ot.push(obj)
 
-        if (ot.length > 0) return ot
+        return ot
     }
 
     getStep(angle, dist) {
-        const rad = -angle * Math.PI / 180;
+        const rad = angle * Math.PI / 180;
         return {
             x: dist * Math.cos(rad),
             y: dist * Math.sin(rad)
@@ -1115,34 +1113,33 @@ class MGMObject {
         this._mgm.objectsId++
         this.objectId = this._mgm.objectsId
 
-
-        if (!this.x) this.x = 0
-        if (!this.y) this.y = 0
-        if (!this.z) this.z = 0
+        if (this.x === undefined) this.x = 0
+        if (this.y === undefined) this.y = 0
+        if (this.z === undefined) this.z = 0
         if (this._mgm.zList.indexOf(this.z) == -1) {
             this._mgm.zList.push(this.z)
             this._mgm.zList.sort(function (a, b) {
                 return a - b;
             })
         }
-        if (this.rotation == undefined) this.rotation = 0
-        if (this.angle == undefined) this.angle = 0
-        if (this.size == undefined) this.size = 1
-        if (this.alpha == undefined) this.alpha = 1
 
+        if (this.rotation === undefined) this.rotation = 0
+        if (this.angle === undefined) this.angle = 0
+        if (this.size === undefined) this.size = 1
+        if (this.alpha === undefined) this.alpha = 1
 
-        if (this.pics && !this.pic) this.pic = this._mgm._firstJ(this.pics)
 
         if (this.collider.width == undefined) this.collider.width = 1
         if (this.collider.height == undefined) this.collider.height = 1
         if (this.collider.x == undefined) this.collider.x = 0
         if (this.collider.y == undefined) this.collider.y = 0
+        if (this.collider.px == undefined) this.collider.px = 0
+        if (this.collider.py == undefined) this.collider.py = 0
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 0
             if (this.onGround === undefined) this.onGround = false
         }
-
 
         if (this.border && typeof this.border == 'string') {
             this.border = this.border.split(',')
@@ -1150,38 +1147,43 @@ class MGMObject {
             if (this.border[1]) this.border[1] = this.border[1].trim()
         }
 
-        if (this.cameraZX == undefined) this.cameraZX = 1
-        if (this.cameraZY == undefined) this.cameraZY = 1
+        if (this.cameraZX === undefined) this.cameraZX = 1
+        if (this.cameraZY === undefined) this.cameraZY = 1
         if (this.cameraZ) {
             this.cameraZX = this.cameraZ
             this.cameraZY = this.cameraZ
         }
 
-        if (this.flipXV == undefined) this.flipXV = 1
-        if (this.flipYV == undefined) this.flipYV = 1
+        if (this.flipXV === undefined) this.flipXV = 1
+        if (this.flipYV === undefined) this.flipYV = 1
 
-        if (this.width) this._prmWidth = this.width
-        if (this.height) this._prmHeight = this.height
+        if (this.width !== undefined) this._prmWidth = this.width
+        if (this.height !== undefined) this._prmHeight = this.height
 
-        if (typeof this.pic != 'string') {
+        if (typeof this.pic != 'string')
             this.picName = this._mgm._firstJ(this.pic)
-        }
+
 
         this._wait = {}
         this._pressK = true
+
     }
 
 
     _update() {
+
+        this._work()
+        this._waitsWork()
+
         if (this._goStart && this.start) {
             this.start(this)
             delete this._goStart
         }
-        this._waitsWork()
-        if (this.active === false) return
-        if (this.update) this.update(this)
-        this._work()
+
+        if (this.update && this.active !== false) this.update(this)
     }
+
+        
 
 
 
@@ -1190,7 +1192,7 @@ class MGMObject {
         if (this.angle > 180) this.angle -= 360
         if (this.anglePic) this.rotation = this.angle
 
-        if (this.camera) {
+        if (this.atCamera) {
             this._mgm.camera.x = this.x
             this._mgm.camera.y = this.y
         }
@@ -1198,15 +1200,17 @@ class MGMObject {
         this._image = this._getPic()
 
         if (this._image) {
-            if (!this._prmWidth) this.width = this._image.width
-            if (!this._prmHeight) this.height = this._image.height
+            if (this._prmWidth === undefined) this.width = this._image.width
+            if (this._prmHeight === undefined) this.height = this._image.height
         } else {
-            if (!this.width) this.width = 1
-            if (!this.height) this.height = 1
+            if (this.width === undefined) this.width = 1
+            if (this.height === undefined) this.height = 1
         }
 
         this._width = this.width * this.size
         this._height = this.height * this.size
+        this._width2 = this._width / 2
+        this._height2 = this._height / 2
 
         if (!this.nocont) {
             if (this.physics && this.mass) {
@@ -1214,10 +1218,12 @@ class MGMObject {
                 this.y += this.mass * this.gravVel
                 this.onGround = false
             }
+
             this.collider._pivotXL = this._width * this.collider.width / 2 - this._width * this.collider.x
             this.collider._pivotXR = this._width * this.collider.width / 2 + this._width * this.collider.x
             this.collider._pivotYB = this._height * this.collider.height / 2 - this._height * this.collider.y
             this.collider._pivotYT = this._height * this.collider.height / 2 + this._height * this.collider.y
+
             this.collider.left = this.x - this.collider._pivotXL
             this.collider.right = this.x + this.collider._pivotXR
             this.collider.top = this.y + this.collider._pivotYT
@@ -1230,6 +1236,9 @@ class MGMObject {
 
             this._physicWork()
         }
+
+        this.collider._px = this.collider.px * this._width
+        this.collider._py = this.collider.py * this._height
 
         if (this.flipX)
             if (this.angle > -90 && this.angle < 90) this.flipXV = 1
@@ -1292,26 +1301,35 @@ class MGMObject {
         }
     }
 
+
     _draw() {
         if (this.hidden) return
         if (this.active === false) return
         if (this._toDel === false) return
 
-        if (this.collider.right < this._mgm.camera.x - this._mgm.canvCX ||
-            this.collider.left > this._mgm.camera.x + this._mgm.canvCX ||
-            this.collider.top < this._mgm.camera.y - this._mgm.canvCY ||
-            this.collider.bottom > this._mgm.camera.y + this._mgm.canvCY
-        ) return
+        const gr = 0
+        if (this.inDraw === undefined && this.onCamera === undefined)
+            if (this.y - this.collider._py + this._height2 < this._mgm.camera.y - this._mgm.canvCY + gr ||
+                this.y - this.collider._py - this._height2 > this._mgm.camera.y + this._mgm.canvCY - gr ||
+                this.x + this.collider._px - this._width2 > this._mgm.camera.x + this._mgm.canvCX - gr ||
+                this.x + this.collider._px + this._width2 < this._mgm.camera.x - this._mgm.canvCX + gr
+            ) return
 
-        this._cameraZXm = - this._mgm.camera.x * this.cameraZX
-        this._camersZYm = this._mgm.camera.y * this.cameraZY
+        if (this.onCamera === undefined) {
+            this._cameraZXm = - this._mgm.camera.x * this.cameraZX
+            this._camersZYm = this._mgm.camera.y * this.cameraZY
+        } else {
+            this._cameraZXm = 0
+            this._camersZYm = 0
+        }
 
         this._mgm.context.save()
         this._mgm.context.translate(
-            Math.round(this.x + this._mgm.canvCX + this._cameraZXm),
-            Math.round(-this.y + this._mgm.canvCY + this._camersZYm)
+            Math.round(this.x + this._mgm.canvCX + this._cameraZXm + this.collider._px),
+            Math.round(-this.y + this._mgm.canvCY + this._camersZYm + this.collider._py)
         )
         this._drawPrimitives(2)
+
         if (this.alpha < 1) this._mgm.context.globalAlpha = this.alpha
         else this._mgm.context.globalAlpha = 1
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
@@ -1321,13 +1339,16 @@ class MGMObject {
         if (this._image) this._mgm.context.drawImage(this._image,
             -this._width / 2,
             -this._height / 2,
-            this._width, this._height)
+            this._width,
+            this._height)
 
         this._drawPrimitives(1)
         this._mgm.context.restore()
 
         if (this.border) this._boardsShow(this.border)
         if (this._mgm.params.borders) this._boardsShow(this._mgm.params.borders)
+
+
     }
 
     _dot(x, y, col = '#ff0') {
@@ -1363,6 +1384,7 @@ class MGMObject {
     }
 
     _getPic(name = this.picName) {
+        if (name == '') name = this.picName
         if (this._pics) return this._pics[name]
         return null
     }
@@ -1392,7 +1414,7 @@ class MGMObject {
     _drawTextFn(prm, pos) {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
-        if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
+        if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (prm.color) this._mgm.context.fillStyle = prm.color
         else this._mgm.context.fillStyle = this._mgm._defaultContext.fontColor
         prm.fontSize = (prm.size || this._mgm._defaultContext.fontSize) + 'px'
@@ -1410,7 +1432,7 @@ class MGMObject {
     _drawLineFn(prm, pos) {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
-        if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
+        if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x1) prm.x1 = 0
         if (!prm.y1) prm.y1 = 0
         if (!prm.x2) prm.x2 = 0
@@ -1428,7 +1450,7 @@ class MGMObject {
     _drawRectFn(prm, pos) {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
-        if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
+        if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
         this._mgm.context.beginPath()
@@ -1439,7 +1461,7 @@ class MGMObject {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
         }
-        if (prm.fillPic && prm.fillPic != '') {
+        if (prm.fillPic !== undefined) {
             this._mgm.context.fillStyle = this._mgm.context.createPattern(this._getPic(prm.fillPic), "repeat")
             this._mgm.context.fill()
         }
@@ -1454,7 +1476,7 @@ class MGMObject {
     _drawCircleFn(prm, pos) {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
-        if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
+        if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
         this._mgm.context.beginPath()
@@ -1466,7 +1488,7 @@ class MGMObject {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
         }
-        if (prm.fillPic && prm.fillPic != '') {
+        if (prm.fillPic !== undefined) {
             this._mgm.context.fillStyle = this._mgm.context.createPattern(this._getPic(prm.fillPic), "repeat")
             this._mgm.context.fill()
         }
@@ -1480,7 +1502,7 @@ class MGMObject {
     _drawPolygonFn(prm, pos) {
         if (prm.absolute === true && pos == 1) return
         if (prm.absolute !== true && pos == 2) return
-        if (prm.alpha) this._mgm.context.globalAlpha = prm.alpha
+        if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         else prm.pattern = []
@@ -1494,7 +1516,7 @@ class MGMObject {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
         }
-        if (prm.fillPic && prm.fillPic != '') {
+        if (prm.fillPic !== undefined) {
             this._mgm.context.fillStyle = this._mgm.context.createPattern(this._getPic(prm.fillPic), "repeat")
             this._mgm.context.fill()
         }
@@ -1605,8 +1627,8 @@ class MGMObject {
     }
 
     contacts(prm, key = 'name') {
-        const mas = []
-        const ot = []
+        let mas = []
+        let ot = []
         let res
 
         for (const obj of this._mgm.objects)
@@ -1614,9 +1636,23 @@ class MGMObject {
                 if (res = this.contactObj(obj))
                     mas.push(res)
 
-        if (prm)
-            for (const obj of mas)
-                if (obj[key] == prm) ot.push(obj)
+        if (prm) for (const obj of mas)
+            if (obj[key] == prm) ot.push(obj)
+
+        if (prm === undefined) ot = mas
+
+        return ot
+    }
+
+    contacts2() {
+        const ot = []
+        let res
+
+        for (const obj of this._mgm.objects)
+            if (obj != this)
+                if (res = this.contactObj(obj))
+                    ot.push(res)
+
 
         if (ot.length > 0) return ot
     }
