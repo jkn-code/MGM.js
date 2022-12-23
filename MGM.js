@@ -945,6 +945,8 @@ class MGM {
     }
 
     angleObj(obj1, obj2) {
+        if (obj1.active === false) return
+        if (obj2.active === false) return
         return this.angleXY(obj1.x, obj1.y, obj2.x, obj2.y)
     }
 
@@ -953,6 +955,8 @@ class MGM {
     }
 
     distanceObj(obj1, obj2) {
+        if (obj1.active === false) return
+        if (obj2.active === false) return
         return this.distanceXY(obj1.x, obj1.y, obj2.x, obj2.y)
     }
 
@@ -960,7 +964,6 @@ class MGM {
         if (this.objects.length > 10000) return
         if (this.noconts.length > 10000) return
         prm._mgm = this
-        if (prm.active !== false) prm.active = true
         const obj = new MGMObject(prm)
         return obj
     }
@@ -1092,6 +1095,7 @@ class MGMObject {
 
         this._mgm = params._mgm
         if (!this.collider) this.collider = {}
+        if (params.active !== false) this.active = true
 
         if (!params.isClone && this.init) this.init(this)
 
@@ -1179,8 +1183,8 @@ class MGMObject {
             this.start(this)
             delete this._goStart
         }
-
-        if (this.update && this.active !== false) this.update(this)
+        
+        if (this.update && this.active) this.update(this)
     }
 
         
@@ -1251,13 +1255,14 @@ class MGMObject {
     _physicWork() {
         if (this.hidden) return
         if (!this.physics) return
+        if (this.active === false) return
 
         if (this.physics == 'unit' || this.physics == 'unit2') {
             let nextX = 0
             let nextY = 0
             this.onGround = false
             for (const obj of this._mgm.objects)
-                if (this.objectId != obj.objectId && !obj.hidden)
+                if (this.objectId != obj.objectId && !obj.hidden && obj.active)
                     if (obj.physics == 'wall'
                         || (this.physics == 'unit' && obj.physics == 'unit2')
                         || (this.physics == 'unit2' && obj.physics == 'unit'))
@@ -1291,7 +1296,7 @@ class MGMObject {
             this.x -= nextX
             this.y -= nextY
 
-            for (const obj of this._mgm.objects) if (this.objectId != obj.objectId)
+            for (const obj of this._mgm.objects) if (this.objectId != obj.objectId && obj.active)
                 if (obj.physics == 'wall' || obj.physics == 'unit2')
                     if (this.x + this.collider._pivotXR > obj.collider.left &&
                         this.x - this.collider._pivotXL < obj.collider.right &&
