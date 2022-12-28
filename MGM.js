@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.7');
+console.log('MGM 1.8');
 
 class MGM {
     constructor(params) {
@@ -414,9 +414,9 @@ class MGM {
         } else {
             for (let j in this.object)
                 if (this.object[j].sounds) {
-                    if (!this.object[j]._sounds) this.object[j]._sounds = {}
+                    if (!this.object[j].sounds) this.object[j].sounds = {}
                     for (let k in this.object[j].sounds)
-                        this.object[j]._sounds[k] = this._loadSoundCtx(this.object[j].sounds[k], j, k)
+                        this._loadSoundCtx(this.object[j].sounds[k], j, k)
                 }
         }
 
@@ -558,9 +558,13 @@ class MGM {
                     buffer: buffer,
                     end: true,
                     muteVol: 0,
+                    muted: false,
+                    src: src,
+                    duration: buffer.duration
                 }
 
                 sound._setMuted = muted => {
+                    sound.muted = muted
                     if (!sound.gainNode) return
                     if (muted) {
                         sound.muteVol = sound.gainNode.gain.value
@@ -570,8 +574,7 @@ class MGM {
                     }
                 }
 
-                if (j && k) this.object[j]._sounds[k] = sound
-                if (j && !k) this.object[j]._sound = sound
+                this.object[j].sounds[k] = sound
                 this._build.resLoad++
 
             }, function (error) {
@@ -799,18 +802,27 @@ class MGM {
     }
 
     _soundsMute(muted) {
-        for (const obj of this.objects) {
-            if (obj.sounds)
+        if (!this.objects && !this.noconts) return
+
+        for (const obj of this.objects) if (obj.sounds) {
+            if (!this._audioCtxOk) {
                 for (const j in obj.sounds)
                     obj.sounds[j].muted = muted
-            if (obj._sounds)
-                for (const j in obj._sounds)
-                    obj._sounds[j]._setMuted(muted)
+            } else {
+                for (const j in obj.sounds)
+                    obj.sounds[j]._setMuted(muted)
+            }
         }
-        for (const obj of this.noconts)
-            if (obj.sounds)
+
+        for (const obj of this.noconts) if (obj.sounds) {
+            if (!this._audioCtxOk) {
                 for (const j in obj.sounds)
                     obj.sounds[j].muted = muted
+            } else {
+                for (const j in obj.sounds)
+                    obj.sounds[j]._setMuted(muted)
+            }
+        }
     }
 
     _orderY(a, b) {
@@ -1085,7 +1097,7 @@ class MGMObject {
         for (const j in obj) {
             const v = obj[j]
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
-                j == 'sounds' || j == '_sounds' ||
+                j == 'sounds' ||
                 j == 'name' || j == '_mgm' || j == '_obj' ||
                 typeof v == 'function') this[j] = v
             else {
@@ -1183,11 +1195,11 @@ class MGMObject {
             this.start(this)
             delete this._goStart
         }
-        
+
         if (this.update && this.active) this.update(this)
     }
 
-        
+
 
 
 
@@ -1785,17 +1797,10 @@ class MGMObject {
     }
 
     _getSound(prm) {
-        let snd, snds, sound
+        let sound
 
-        if (!this._mgm._audioCtxOk) {
-            snds = this.sounds
-        } else {
-            snds = this._sounds
-        }
-
-        if (!prm.name) {
-            sound = this._mgm._firstV(snds)
-        } else sound = snds[prm.name]
+        if (!prm.name) sound = this._mgm._firstV(this.sounds)
+        else sound = this.sounds[prm.name]
 
         return sound
     }
@@ -1838,7 +1843,6 @@ class MGMObject {
     _soundPlayCtx(prm, sound) {
         if (prm.pan === undefined) prm.pan = 0
 
-
         sound.source = this._mgm.audioCtx.createBufferSource()
         sound.source.buffer = sound.buffer
 
@@ -1853,8 +1857,9 @@ class MGMObject {
         sound.source.connect(gainNode)
         sound.gainNode = gainNode
 
-        if (prm.loop) sound.source.loop = true
+        if (sound.muted) sound._setMuted(true)
 
+        if (prm.loop) sound.source.loop = true
 
         sound.source.onended = () => {
             sound.end = true
@@ -1872,41 +1877,31 @@ class MGMObject {
     }
 
     soundPrm(prm) {
+        console.log(prm);
         if (prm.name === undefined) return
 
         if (prm.volume !== undefined) {
-            if (this._mgm._audioCtxOk) this._sounds[prm.name].gainNode.gain.value = prm.volume
+            if (this._mgm._audioCtxOk) this.sounds[prm.name].gainNode.gain.value = prm.volume
             else this.sounds[prm.name].volume = prm.volume
         }
 
         if (prm.pan !== undefined) {
-            if (this._mgm._audioCtxOk) this._sounds[prm.name].panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
+            if (this._mgm._audioCtxOk) this.sounds[prm.name].panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
         }
     }
 
 
-
-    soundStopCtx(name) {
-        const sound = this._getSound(prm)
-        sound.source.stop(0)
-    }
-
     _soundStopAll() {
-        if (this.sound)
-            this.sound.pause()
+        if (!this.sounds) return
 
-        if (this.sounds)
+        if (!this._mgm._audioCtxOk) {
             for (const j in this.sounds)
                 this.sounds[j].pause()
-
-        if (this._sound)
-            if (this._sound.on)
-                this._sound.source.stop(0)
-
-        if (this._sounds)
-            for (const j in this._sounds)
-                if (this._sounds[j].on)
-                    this._sounds[j].source.stop(0)
+        } else {
+            for (const j in this.sounds)
+                if (this.sounds[j].on)
+                    this.sounds[j].source.stop(0)
+        }
     }
 
     clone(prm) {
