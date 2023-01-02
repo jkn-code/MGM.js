@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.9');
+console.log('MGM 1.10');
 
 class MGM {
     constructor(params) {
@@ -133,10 +133,11 @@ class MGM {
             document.title = this.params.name
         }
 
-
-        this.curtain = document.createElement('div')
-        document.body.appendChild(this.curtain)
-        this.curtain.classList.add('mgm-curtain')
+        if (!document.querySelector('.mgm-curtain')) {
+            this.curtain = document.createElement('div')
+            document.body.appendChild(this.curtain)
+            this.curtain.classList.add('mgm-curtain')
+        } else this.curtain = document.querySelector('.mgm-curtain')
         this.curtain.style.cssText = `
             position: absolute; 
             top: 50%; 
@@ -145,7 +146,7 @@ class MGM {
             height: 100vh; 
             width: 100vw; 
             background: ` + document.body.style.backgroundColor + `; 
-            z-index: 999; 
+            z-index: 9999; 
             cursor: pointer;
             display: flex; 
             align-items: center; 
@@ -445,7 +446,6 @@ class MGM {
         if (this.params.fullscreen && this.params.autorun === false)
             this._toggleFullScreen()
         this.curtainIn.innerHTML = ''
-        this.curtain.style.display = 'none'
         if (this.params.cursor === false) this.plane.style.cursor = 'none'
         this.objects = []
         this.noconts = []
@@ -456,6 +456,7 @@ class MGM {
 
         setTimeout(() => {
             this._initObjs()
+            this.curtain.style.display = 'none'
             if (this.params.editor) this._editor.loadObj()
             else this._loop()
         }, 0)
@@ -614,7 +615,6 @@ class MGM {
         this.plane.style.width = cpos.width + 'px'
         this.plane.style.height = cpos.height + 'px'
 
-
         document.body.style.fontSize = (this.params.fontSize || (h / 40)) + 'px'
 
         this._getHtmlBorders()
@@ -653,10 +653,6 @@ class MGM {
             ht.x2 = left + cpos.width
             ht.y2 = top + cpos.height
         })
-    }
-
-
-    _classInf() {
     }
 
 
@@ -732,7 +728,7 @@ class MGM {
     }
 
     _loop() {
-        this._consDiv.innerHTML = ''
+        if (this.params.log) this._consDiv.innerHTML = ''
 
         this._touchLoop()
         this._mouseLoop()
@@ -753,7 +749,6 @@ class MGM {
                 + '<br><br>objs: ' + this.objects.length + ', nocons: ' + this.noconts.length
             this._consDiv.scrollTop = 10000
         }
-
 
         if (this.RUN) requestAnimationFrame(() => this._loop())
         else this._soundsStop()
@@ -1096,8 +1091,6 @@ class MGMObject {
             if (params._obj) obj = params._obj
             else obj = params._mgm.object[params.name]
         }
-        if (!obj.nocont && params._mgm.objects.length > 10000) return
-        if (obj.nocont && params._mgm.noconts.length > 10000) return
 
         for (const j in obj) {
             const v = obj[j]
@@ -1109,6 +1102,9 @@ class MGMObject {
                 if (params.isClone) this[j] = JSON.parse(JSON.stringify(v))
             }
         }
+
+        if (!this.nocont && params._mgm.objects.length > 10000) return
+        if (this.nocont && params._mgm.noconts.length > 10000) return
 
         this._mgm = params._mgm
         if (!this.collider) this.collider = {}
@@ -1137,12 +1133,7 @@ class MGMObject {
         if (this.x === undefined) this.x = 0
         if (this.y === undefined) this.y = 0
         if (this.z === undefined) this.z = 0
-        if (this._mgm.zList.indexOf(this.z) == -1) {
-            this._mgm.zList.push(this.z)
-            this._mgm.zList.sort(function (a, b) {
-                return a - b;
-            })
-        }
+        this._setZLayer()
 
         if (this.rotation === undefined) this.rotation = 0
         if (this.angle === undefined) this.angle = 0
@@ -1194,6 +1185,16 @@ class MGMObject {
     }
 
 
+    _setZLayer() {
+        if (this._mgm.zList.indexOf(this.z) == -1) {
+            this._mgm.zList.push(this.z)
+            this._mgm.zList.sort(function (a, b) {
+                return a - b;
+            })
+        }
+    }
+
+
     _update() {
 
         if (this.update && this.active) this.update(this)
@@ -1203,6 +1204,7 @@ class MGMObject {
 
         if (this._goStart && this.start) {
             this.start(this)
+            this._setZLayer()
             delete this._goStart
         }
 
@@ -1264,12 +1266,13 @@ class MGMObject {
         for (const obj of this._mgm.objects) {
             let ok = true
             let cont = false
+
             if (!obj.active) ok = false
-            if (this.objectId == obj.objectId) ok = false
-            if (obj.hidden) ok = false
-            if (!obj.physics) ok = false
-            if (this.physics == 'unit' && obj.physics == 'unit') ok = false
-            if (this.physics == 'unit2' && obj.physics == 'unit') ok = false
+            else if (this.objectId == obj.objectId) ok = false
+            else if (obj.hidden) ok = false
+            else if (!obj.physics) ok = false
+            else if (this.physics == 'unit' && obj.physics == 'unit') ok = false
+            else if (this.physics == 'unit2' && obj.physics == 'unit') ok = false
 
             if (ok &&
                 this.collider.right > obj.collider.left &&
