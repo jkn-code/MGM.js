@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.12');
+console.log('MGM 1.14');
 
 class MGM {
     constructor(params) {
@@ -729,7 +729,6 @@ class MGM {
 
         this._touchLoop()
         this._mouseLoop()
-        if (this.params.orderY) this.objects.sort(this._orderY)
         if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
         this._loopDraw()
@@ -752,15 +751,49 @@ class MGM {
     }
 
     _loopDraw() {
-        for (const z of this.zList) {
-            for (const obj of this.objects)
-                if (z == obj.z)
+
+
+        const mas = []
+        const gr = 0
+        for (const obj of this.objects) {
+            let ok = true
+            let draw = false
+            if (obj.hidden) ok = false
+            else if (obj.active === false) ok = false
+            else if (obj._toDel === false) ok = false
+            if (ok)
+                if (obj.inDraw || obj.onCamera) draw = true
+                else if (obj.y - obj.collider._py + obj._height2 > obj._mgm.camera.y - obj._mgm.canvCY + gr &&
+                    obj.y - obj.collider._py - obj._height2 < obj._mgm.camera.y + obj._mgm.canvCY - gr &&
+                    obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
+                    obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
+                ) draw = true
+            if (ok && draw) mas.push(obj)
+        }
+
+        for (const obj of this.noconts) {
+            let ok = true
+            let draw = false
+            if (obj.hidden) ok = false
+            else if (obj.active === false) ok = false
+            else if (obj._toDel === false) ok = false
+            if (ok)
+                if (obj.inDraw || obj.onCamera) draw = true
+                else if (obj.y - obj.collider._py + obj._height2 > obj._mgm.camera.y - obj._mgm.canvCY + gr &&
+                    obj.y - obj.collider._py - obj._height2 < obj._mgm.camera.y + obj._mgm.canvCY - gr &&
+                    obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
+                    obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
+                ) draw = true
+            if (ok && draw) mas.push(obj)
+        }
+
+        if (this.params.orderY) mas.sort(this._orderY)
+
+        for (const z of this.zList)
+            for (const obj of mas)
+                if (obj.z == z)
                     obj._draw()
 
-            for (const obj of this.noconts)
-                if (z == obj.z)
-                    obj._draw()
-        }
     }
 
     _loopUpdate() {
@@ -1125,7 +1158,7 @@ class MGMObject {
         this._mgm = params._mgm
         if (params.active !== false) this.active = true
         if (!this.collider) this.collider = {}
-        if (this.anim)
+        if (this.anim && !this._anima)
             this._anima = {
                 frame: 0,
                 sch: 0,
@@ -1417,17 +1450,7 @@ class MGMObject {
 
 
     _draw() {
-        if (this.hidden) return
-        if (this.active === false) return
-        if (this._toDel === false) return
 
-        const gr = 0
-        if (this.inDraw === undefined && this.onCamera === undefined)
-            if (this.y - this.collider._py + this._height2 < this._mgm.camera.y - this._mgm.canvCY + gr ||
-                this.y - this.collider._py - this._height2 > this._mgm.camera.y + this._mgm.canvCY - gr ||
-                this.x + this.collider._px - this._width2 > this._mgm.camera.x + this._mgm.canvCX - gr ||
-                this.x + this.collider._px + this._width2 < this._mgm.camera.x - this._mgm.canvCX + gr
-            ) return
 
         if (this.onCamera === undefined) {
             this._cameraZXm = - this._mgm.camera.x * this.cameraZX
