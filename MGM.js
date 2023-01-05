@@ -1,6 +1,6 @@
 
 
-console.log('MGM 1.14');
+console.log('MGM.js 1.15');
 
 class MGM {
     constructor(params) {
@@ -357,7 +357,6 @@ class MGM {
     _initKeys() {
         this.keys = {}
         this.press = {}
-        this.pressK = {}
 
 
         let keyNums = {
@@ -367,20 +366,11 @@ class MGM {
             48: 'n0', 49: 'n1', 50: 'n2', 51: 'n3', 52: 'n4', 53: 'n5', 54: 'n6', 55: 'n7', 56: 'n8', 57: 'n9',
         }
         for (let j in keyNums) this.keys[keyNums[j]] = false
-        for (let j in keyNums) this.press[keyNums[j]] = false
-        for (let j in keyNums) this.pressK[keyNums[j]] = true
         document.onkeydown = (e) => {
             e = e || window.event
             let k = keyNums[e.keyCode]
             this.keys[k] = true
 
-            if (this.pressK[k]) {
-                this.press[k] = true
-                this.pressK[k] = false
-                setTimeout(() => {
-                    this.pressK[k] = true
-                }, 100)
-            }
         }
         document.onkeyup = (e) => {
             e = e || window.event
@@ -394,27 +384,28 @@ class MGM {
         this._build.resAll = 0
         this._build.resLoad = 0
 
-        for (let j in this.object)
+        for (const j in this.object)
             if (this.object[j].pic) {
                 this.object[j]._pics = {}
-                if (typeof this.object[j].pic == 'string') {
-                    this.object[j].picName = '_one'
-                    this.object[j]._pics[this.object[j].picName] = this._loadPic(this.object[j].pic)
-                } else
-                    for (let k in this.object[j].pic)
+                for (const k in this.object[j].pic) {
+                    if (typeof this.object[j].pic[k] == 'string')
                         this.object[j]._pics[k] = this._loadPic(this.object[j].pic[k])
+                    if (typeof this.object[j].pic[k] == 'object') {
+                        this.object[j]._pics[k] = this.object[j].pic[k]
+                    }
+                }
             }
 
         if (this._audioCtxOk === undefined) {
-            for (let j in this.object)
+            for (const j in this.object)
                 if (this.object[j].sounds)
                     for (let k in this.object[j].sounds)
                         this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
         } else {
-            for (let j in this.object)
+            for (const j in this.object)
                 if (this.object[j].sounds) {
                     if (!this.object[j].sounds) this.object[j].sounds = {}
-                    for (let k in this.object[j].sounds)
+                    for (const k in this.object[j].sounds)
                         this._loadSoundCtx(this.object[j].sounds[k], j, k)
                 }
         }
@@ -439,7 +430,6 @@ class MGM {
 
 
     _run() {
-
         if (this.params.fullscreen && this.params.autorun === false)
             this._toggleFullScreen()
         this.curtainIn.innerHTML = ''
@@ -768,7 +758,10 @@ class MGM {
                     obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
                     obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
                 ) draw = true
-            if (ok && draw) mas.push(obj)
+            if (ok && draw) {
+                mas.push(obj)
+                obj._drawing = true
+            } else obj._drawing = false
         }
 
         for (const obj of this.noconts) {
@@ -784,7 +777,10 @@ class MGM {
                     obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
                     obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
                 ) draw = true
-            if (ok && draw) mas.push(obj)
+            if (ok && draw) {
+                mas.push(obj)
+                obj._drawing = true
+            } else obj._drawing = false
         }
 
         if (this.params.orderY) mas.sort(this._orderY)
@@ -1139,7 +1135,6 @@ class MGMObject {
             else obj = params._mgm.object[params.name]
         }
 
-
         if (!obj.nocont && params._mgm.objects.length > 10000) return
         if (obj.nocont && params._mgm.noconts.length > 10000) return
 
@@ -1149,6 +1144,7 @@ class MGMObject {
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
                 j == 'anim' || j == '_animName' || j == 'sounds' ||
                 j == 'name' || j == '_mgm' || j == '_obj' ||
+                j == 'cut' ||
                 typeof v == 'function') this[j] = v
             else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
@@ -1158,13 +1154,25 @@ class MGMObject {
         this._mgm = params._mgm
         if (params.active !== false) this.active = true
         if (!this.collider) this.collider = {}
-        if (this.anim && !this._anima)
+        if (this._pics)
+            for (const j in this._pics)
+                if (this._pics[j].pic) {
+                    if (this._pics[j].object)
+                        this._pics[j]._pic = this._mgm.object[this._pics[j].object]._pics[this._pics[j].pic]
+                    else
+                        this._pics[j]._pic = this._pics[this._pics[j].pic]
+                }
+
+        if (this.anim && !this._anima) {
             this._anima = {
                 frame: 0,
                 sch: 0,
-                anim: null,
-                name: '',
+                name: undefined,
+                pics: undefined,
+                length: 0,
             }
+        }
+        
 
         if (!this.isClone && this.init) this.init(this)
 
@@ -1225,11 +1233,10 @@ class MGMObject {
         if (this.flipXV === undefined) this.flipXV = 1
         if (this.flipYV === undefined) this.flipYV = 1
 
-        if (this.width !== undefined) this._prmWidth = this.width
-        if (this.height !== undefined) this._prmHeight = this.height
 
         if (typeof this.pic != 'string')
-            this.picName = this._mgm._firstJ(this.pic)
+            if (!this.picName)
+                this.picName = this._mgm._firstJ(this.pic)
 
         this._wait = {}
         this._pressK = true
@@ -1302,13 +1309,14 @@ class MGMObject {
             if (this.angle > 0) this.flipYV = 1
             else this.flipYV = -1
 
-        if (this._anima && this._anima.anim) {
-            this._anima.sch++
-            if (this._anima.sch == this._anima.anim.speed) {
+        if (this._anima && this._anima.name && this._drawing) {
+            if (this._anima.sch >= this.anim.speed) {
                 this._anima.sch = 0
                 this._anima.frame++
-                if (this._anima.frame == this._anima.anim.length) this._anima.frame = 0
+                if (this._anima.frame >= this._anima.length) this._anima.frame = 0
             }
+            if (this._anima.sch == 0) this.picName = this._anima.pics[this._anima.frame]
+            this._anima.sch++
         }
     }
 
@@ -1398,19 +1406,18 @@ class MGMObject {
         this._image = this._getPic()
 
 
-        if (this.anim && this._anima.anim) {
-            if (this._prmWidth === undefined) this.width = this._anima.anim.width
-            if (this._prmHeight === undefined) this.height = this._anima.anim.height
-        } else if (this._image) {
-            if (this._prmWidth === undefined) this.width = this._image.width
-            if (this._prmHeight === undefined) this.height = this._image.height
+        if (this._image) {
+            if (this.width === undefined) this._widthA = this._image.width
+            else this._widthA = this.width
+            if (this.height === undefined) this._heightA = this._image.height
+            else this._heightA = this.height
         } else {
-            if (this.width === undefined) this.width = 1
-            if (this.height === undefined) this.height = 1
+            if (this.width === undefined) this._widthA = 1
+            if (this.height === undefined) this._heightA = 1
         }
 
-        this._width = this.width * this.size
-        this._height = this.height * this.size
+        this._width = this._widthA * this.size
+        this._height = this._heightA * this.size
         this._width2 = this._width / 2
         this._height2 = this._height / 2
     }
@@ -1433,13 +1440,15 @@ class MGMObject {
 
 
     setAnim(name, frame = 0) {
-        this._anima.anim = this.anim[name]
+        if (name == 'speed') return
+        if (name == this._anima.name) return
         this._anima.name = name
         this._anima.frame = frame
         this._anima.sch = 0
-        if (this._anima.anim.x === undefined) this._anima.anim.x = 0
-        if (this._anima.anim.y === undefined) this._anima.anim.y = 0
+        this._anima.pics = this.anim[name]
+        this._anima.length = this.anim[name].length
     }
+
 
 
 
@@ -1474,28 +1483,30 @@ class MGMObject {
         this._mgm.context.scale(this.flipXV, this.flipYV)
         if (this.effect) this._mgm.context.filter = this.effect
 
-        if (this._anima && this._anima.anim) {
-            this._mgm.context.drawImage(this._image,
-                this._anima.anim.x + this._anima.frame * this._anima.anim.width,
-                this._anima.anim.y,
-                this._anima.anim.width,
-                this._anima.anim.height,
-                -this._width / 2,
-                -this._height / 2,
-                this._width,
-                this._height)
-        } else if (this._image)
+        if (this._image && !this._image.pic)
             this._mgm.context.drawImage(this._image,
                 -this._width / 2,
                 -this._height / 2,
                 this._width,
                 this._height)
+        else
+            if (this._image && this._image.pic) {
+                this._mgm.context.drawImage(this._image._pic,
+                    this._image.x,
+                    this._image.y,
+                    this._image.width,
+                    this._image.height,
+                    -this._width / 2,
+                    -this._height / 2,
+                    this._width,
+                    this._height)
+            }
 
         this._drawPrimitives(1)
         this._mgm.context.restore()
 
         if (this.border) this._boardsShow(this.border)
-        if (this._mgm.params.borders) this._boardsShow(this._mgm.params.borders)
+        if (this._mgm.params.borders && !this.nocont) this._boardsShow(this._mgm.params.borders)
     }
 
 
