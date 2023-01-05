@@ -99,5 +99,10 @@ ____
 
 Зодонатить:
 
-[yoomoney](https://yoomoney.ru/to/410018410401723)
+[Yoomoney](https://yoomoney.ru/to/410018410401723)
 
+____
+
+## Discord
+
+[Discord](https://discord.gg/mzmgJqH6Vj)
