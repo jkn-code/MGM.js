@@ -97,8 +97,6 @@ ____
 
 ## Donate
 
-Зодонатить:
-
 [Yoomoney](https://yoomoney.ru/to/410018410401723)
 
 ____
