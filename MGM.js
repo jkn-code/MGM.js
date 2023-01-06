@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.15');
+console.log('MGM.js 1.16');
 
 class MGM {
     constructor(params) {
@@ -974,13 +974,18 @@ class MGM {
     random(min, max) {
         if (min !== undefined && max !== undefined)
             return Math.floor(Math.random() * (max - min + 1)) + min;
-        else if (Math.random() >= 0.5) return true
-        else return false
+        else if (min == 1 && max === undefined) {
+            if (Math.random() >= 0.5) return 1
+            else return -1
+        } else {
+            if (Math.random() >= 0.5) return true
+            else return false
+        }
     }
 
 
     angleXY(x1, y1, x2, y2) {
-        let angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI
+        let angle = Math.atan2(x2 - x1, y2 - y1) * 180 / Math.PI
         if (angle > 180) angle -= 360
         if (angle < -180) angle += 360
         return angle
@@ -1023,10 +1028,15 @@ class MGM {
     getObjs(prm, key = 'name') {
         let ot = []
 
-        for (const obj of this.objects)
-            if (obj.active !== false)
-                if (!prm) ot.push(obj)
-                else if (obj[key] == prm) ot.push(obj)
+        if (prm)
+            for (const obj of this.objects)
+                if (obj.active !== false)
+                    if (obj[key] == prm) ot.push(obj)
+
+        if (!prm)
+            for (const obj of this.objects)
+                if (obj.active !== false)
+                    ot.push(obj)
 
         return ot
     }
@@ -1035,8 +1045,8 @@ class MGM {
     getStep(angle, dist) {
         const rad = angle * Math.PI / 180;
         return {
-            x: dist * Math.cos(rad),
-            y: dist * Math.sin(rad)
+            x: dist * Math.sin(rad),
+            y: dist * Math.cos(rad)
         }
     }
 
@@ -1144,7 +1154,6 @@ class MGMObject {
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
                 j == 'anim' || j == '_animName' || j == 'sounds' ||
                 j == 'name' || j == '_mgm' || j == '_obj' ||
-                j == 'cut' ||
                 typeof v == 'function') this[j] = v
             else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
@@ -1172,7 +1181,7 @@ class MGMObject {
                 length: 0,
             }
         }
-        
+
 
         if (!this.isClone && this.init) this.init(this)
 
@@ -1698,16 +1707,16 @@ class MGMObject {
 
 
     step(speed) {
-        const rad = -this.angle * Math.PI / 180;
-        this.x += speed * Math.cos(rad)
-        this.y += speed * Math.sin(rad)
+        const rad = this.angle * Math.PI / 180;
+        this.x += speed * Math.sin(rad)
+        this.y += speed * Math.cos(rad)
     }
 
 
     stepA(speed, angle = 0) {
-        const rad = -angle * Math.PI / 180;
-        this.x += speed * Math.cos(rad)
-        this.y += speed * Math.sin(rad)
+        const rad = angle * Math.PI / 180;
+        this.x += speed * Math.sin(rad)
+        this.y += speed * Math.cos(rad)
     }
 
 
@@ -1788,9 +1797,17 @@ class MGMObject {
     contact(prm, key = 'name') {
         let ot, res
 
-        for (const obj of this._mgm.objects)
-            if (res = this.contactObj(obj))
-                if (obj[key] == prm) {
+        if (prm)
+            for (const obj of this._mgm.objects)
+                if (obj != this && (res = this.contactObj(obj)))
+                    if (obj[key] == prm) {
+                        ot = res
+                        break
+                    }
+
+        if (!prm)
+            for (const obj of this._mgm.objects)
+                if (obj != this && (res = this.contactObj(obj))) {
                     ot = res
                     break
                 }
@@ -1921,7 +1938,7 @@ class MGMObject {
     angleTo(prm) {
         let obj = prm
         if (typeof prm == 'string') obj = this._mgm.getObj(prm)
-        return -this._mgm.angleObj(this, obj)
+        return this._mgm.angleObj(this, obj)
     }
 
 
