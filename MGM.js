@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.17');
+console.log('MGM.js 1.18');
 
 class MGM {
     constructor(params) {
@@ -795,23 +795,23 @@ class MGM {
 
     _loopUpdate() {
         let i = 0
-        for (const obj of this.noconts) {
-            if (!obj._toDel) obj._update()
-            else {
-                if (obj.stop) obj.stop()
-                obj.active = false
-                this.noconts.splice(i, 1)
-            }
-            i++
-        }
-
-        i = 0
         for (const obj of this.objects) {
             if (!obj._toDel) obj._update()
             else {
                 if (obj.stop) obj.stop()
                 obj.active = false
                 this.objects.splice(i, 1)
+            }
+            i++
+        }
+
+        i = 0
+        for (const obj of this.noconts) {
+            if (!obj._toDel) obj._update()
+            else {
+                if (obj.stop) obj.stop()
+                obj.active = false
+                this.noconts.splice(i, 1)
             }
             i++
         }
@@ -1732,15 +1732,15 @@ class MGMObject {
 
 
     wasdA(speed = 0, LR = true) {
-        if (this._mgm.keys.w) this.angle = -90;
-        if (this._mgm.keys.s) this.angle = 90;
+        if (this._mgm.keys.w) this.angle = 0;
+        if (this._mgm.keys.s) this.angle = 180;
         if (LR) {
-            if (this._mgm.keys.d) this.angle = 0;
-            if (this._mgm.keys.a) this.angle = 180;
-            if (this._mgm.keys.w && this._mgm.keys.d) this.angle = -45;
-            if (this._mgm.keys.w && this._mgm.keys.a) this.angle = -135;
-            if (this._mgm.keys.s && this._mgm.keys.d) this.angle = 45;
-            if (this._mgm.keys.s && this._mgm.keys.a) this.angle = 135;
+            if (this._mgm.keys.d) this.angle = 90;
+            if (this._mgm.keys.a) this.angle = -90;
+            if (this._mgm.keys.w && this._mgm.keys.d) this.angle = 45;
+            if (this._mgm.keys.w && this._mgm.keys.a) this.angle = -45;
+            if (this._mgm.keys.s && this._mgm.keys.d) this.angle = 135;
+            if (this._mgm.keys.s && this._mgm.keys.a) this.angle = -135;
         }
         if (this._mgm.keys.w ||
             this._mgm.keys.s ||
