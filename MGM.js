@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.16');
+console.log('MGM.js 1.17');
 
 class MGM {
     constructor(params) {
@@ -337,7 +337,7 @@ class MGM {
 
     _initMouse() {
         if (this.isMobile) return
-        this.mouse = {}
+        this.mouse = { x: 0, y: 0, px: 0, py: 0, }
         this.plane.onmousemove = e => {
             this.mouse.px = e.pageX - this.plane.cpos.left
             this.mouse.py = e.pageY - this.plane.cpos.top
@@ -719,6 +719,7 @@ class MGM {
 
         this._touchLoop()
         this._mouseLoop()
+
         if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
         this._loopDraw()
@@ -794,23 +795,23 @@ class MGM {
 
     _loopUpdate() {
         let i = 0
-        for (const obj of this.objects) {
-            if (!obj._toDel) obj._update()
-            else {
-                if (obj.stop) obj.stop()
-                obj.active = false
-                this.objects.splice(i, 1)
-            }
-            i++
-        }
-
-        i = 0
         for (const obj of this.noconts) {
             if (!obj._toDel) obj._update()
             else {
                 if (obj.stop) obj.stop()
                 obj.active = false
                 this.noconts.splice(i, 1)
+            }
+            i++
+        }
+
+        i = 0
+        for (const obj of this.objects) {
+            if (!obj._toDel) obj._update()
+            else {
+                if (obj.stop) obj.stop()
+                obj.active = false
+                this.objects.splice(i, 1)
             }
             i++
         }
@@ -1267,7 +1268,8 @@ class MGMObject {
 
 
     _update() {
-        if (this.update && this.active) this.update(this)
+        if (this.update && this.active)
+            this.update(this)
 
         this._work()
         this._waitsWork()
@@ -1312,10 +1314,10 @@ class MGMObject {
         }
 
         if (this.flipX)
-            if (this.angle > -90 && this.angle < 90) this.flipXV = 1
+            if (this.angle > 0) this.flipXV = 1
             else this.flipXV = -1
         if (this.flipY)
-            if (this.angle > 0) this.flipYV = 1
+            if (this.angle > 0 && this.angle < 90) this.flipYV = 1
             else this.flipYV = -1
 
         if (this._anima && this._anima.name && this._drawing) {
@@ -1480,8 +1482,8 @@ class MGMObject {
 
         this._mgm.context.save()
         this._mgm.context.translate(
-            Math.round(this.x + this._mgm.canvCX + this._cameraZXm + this.collider._px),
-            Math.round(-this.y + this._mgm.canvCY + this._camersZYm + this.collider._py)
+            this.x + this._mgm.canvCX + this._cameraZXm + this.collider._px,
+            -this.y + this._mgm.canvCY + this._camersZYm + this.collider._py
         )
 
         this._drawPrimitives(2)
@@ -1491,7 +1493,7 @@ class MGMObject {
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
         this._mgm.context.scale(this.flipXV, this.flipYV)
         if (this.effect) this._mgm.context.filter = this.effect
-
+ 
         if (this._image && !this._image.pic)
             this._mgm.context.drawImage(this._image,
                 -this._width / 2,
