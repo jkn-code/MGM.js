@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.18');
+console.log('MGM.js 1.19');
 
 class MGM {
     constructor(params) {
@@ -11,6 +11,7 @@ class MGM {
         this.frame = 0
         this.camera = { x: 0, y: 0 }
         this.tabActive = true
+        this.objIds = 0
 
         window.onload = () => this._init()
     }
@@ -461,12 +462,10 @@ class MGM {
 
     _reload(url) {
         console.log('reload');
-        Mgm.stop()
+        this.stop()
 
         this.object = {}
-        this.objects = []
-        this.noconts = []
-        this.camera = { x: 0, y: 0 }
+        this.clearGame()
 
         let urls = []
         let scrAll = 0
@@ -489,6 +488,13 @@ class MGM {
                 this._loadResources()
             }
         }, 0)
+    }
+
+
+    clearGame() {
+        this.objects = []
+        this.noconts = []
+        this.camera = { x: 0, y: 0 }
     }
 
 
@@ -1138,6 +1144,7 @@ class MGMObject {
 
         let obj
 
+
         if (params._isObj == true) {
             obj = params._mgm.object[params.name]
         } else {
@@ -1162,8 +1169,13 @@ class MGMObject {
         }
 
         this._mgm = params._mgm
+
+        this._mgm.objIds++
+        this._objId = params._mgm.objIds
+
         if (params.active !== false) this.active = true
         if (!this.collider) this.collider = {}
+        
         if (this._pics)
             for (const j in this._pics)
                 if (this._pics[j].pic) {
@@ -1173,7 +1185,7 @@ class MGMObject {
                         this._pics[j]._pic = this._pics[this._pics[j].pic]
                 }
 
-        if (this.anim && !this._anima) {
+        if (this.anim && !this._anima)
             this._anima = {
                 frame: 0,
                 sch: 0,
@@ -1181,8 +1193,6 @@ class MGMObject {
                 pics: undefined,
                 length: 0,
             }
-        }
-
 
         if (!this.isClone && this.init) this.init(this)
 
@@ -1213,7 +1223,6 @@ class MGMObject {
         if (this.rotation === undefined) this.rotation = 0
         if (this.angle === undefined) this.angle = 0
         if (this.size === undefined) this.size = 1
-        if (this.alpha === undefined) this.alpha = 1
 
         if (this.collider.width == undefined) this.collider.width = 1
         if (this.collider.height == undefined) this.collider.height = 1
@@ -1300,8 +1309,8 @@ class MGMObject {
             this._physicWork()
 
             if (this.bounce) {
-                if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = 180 - this.angle
-                if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = -this.angle
+                if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = -this.angle
+                if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = 180 - this.angle
             }
         }
 
@@ -1333,10 +1342,10 @@ class MGMObject {
 
 
     _physicWork() {
-        if (this.hidden) return
         if (!this.physics) return
         if (this.active === false) return
-        if (!this.physics || this.physics == 'wall') return
+        if (this.hidden) return
+        if (this.physics == 'wall') return
 
         this.onGround = false
         let backs = []
@@ -1345,10 +1354,10 @@ class MGMObject {
             let ok = true
             let cont = false
 
-            if (!obj.active) ok = false
-            else if (this.objectId == obj.objectId) ok = false
-            else if (obj.hidden) ok = false
+            if (obj.active === false) ok = false
+            else if (this._objId == obj._objId) ok = false
             else if (!obj.physics) ok = false
+            else if (obj.hidden) ok = false
             else if (this.physics == 'unit' && obj.physics == 'unit') ok = false
             else if (this.physics == 'unit2' && obj.physics == 'unit') ok = false
 
@@ -1488,12 +1497,12 @@ class MGMObject {
 
         this._drawPrimitives(2)
 
-        if (this.alpha < 1) this._mgm.context.globalAlpha = this.alpha
+        if (this.alpha !== undefined) this._mgm.context.globalAlpha = this.alpha
         else this._mgm.context.globalAlpha = 1
         if (this.rotation != 0) this._mgm.context.rotate(this.rotation * Math.PI / 180)
         this._mgm.context.scale(this.flipXV, this.flipYV)
         if (this.effect) this._mgm.context.filter = this.effect
- 
+
         if (this._image && !this._image.pic)
             this._mgm.context.drawImage(this._image,
                 -this._width / 2,
@@ -1732,20 +1741,21 @@ class MGMObject {
 
 
     wasdA(speed = 0, LR = true) {
-        if (this._mgm.keys.w) this.angle = 0;
-        if (this._mgm.keys.s) this.angle = 180;
+        let angle = 0
+        if (this._mgm.keys.w) angle = 0;
+        if (this._mgm.keys.s) angle = 180;
         if (LR) {
-            if (this._mgm.keys.d) this.angle = 90;
-            if (this._mgm.keys.a) this.angle = -90;
-            if (this._mgm.keys.w && this._mgm.keys.d) this.angle = 45;
-            if (this._mgm.keys.w && this._mgm.keys.a) this.angle = -45;
-            if (this._mgm.keys.s && this._mgm.keys.d) this.angle = 135;
-            if (this._mgm.keys.s && this._mgm.keys.a) this.angle = -135;
+            if (this._mgm.keys.d) angle = 90;
+            if (this._mgm.keys.a) angle = -90;
+            if (this._mgm.keys.w && this._mgm.keys.d) angle = 45;
+            if (this._mgm.keys.w && this._mgm.keys.a) angle = -45;
+            if (this._mgm.keys.s && this._mgm.keys.d) angle = 135;
+            if (this._mgm.keys.s && this._mgm.keys.a) angle = -135;
         }
         if (this._mgm.keys.w ||
             this._mgm.keys.s ||
             this._mgm.keys.a ||
-            this._mgm.keys.d) this.step(speed)
+            this._mgm.keys.d) this.stepA(speed, angle)
     }
 
 
