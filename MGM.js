@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.20');
+console.log('MGM.js 1.21');
 
 class MGM {
     constructor(params) {
@@ -20,6 +20,8 @@ class MGM {
     _init() {
 
         if (this.params.autorun !== false) this.params.autorun = true
+        if (this.params.fpsLimit === undefined) this.params.fpsLimit = 60
+        this._fpsTm = 1000 / this.params.fpsLimit
 
         this._initHTML()
         this._initCanvasPlane()
@@ -36,10 +38,6 @@ class MGM {
             if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
         }
 
-        if (location.protocol != 'file:') {
-            this.audioCtx = new AudioContext()
-            this._audioCtxOk = true
-        }
 
         let plOk = true, plTxt
         if (!this.params.platform) this.params.platform = 'pc'
@@ -67,14 +65,18 @@ class MGM {
         window.onfocus = () => {
             if (this.tabActive === false) {
                 this.tabActive = true
-                this._soundsMute(false)
+                this._soundsPause(false, 'act')
             }
         }
         window.onblur = () => {
             if (this.tabActive === true) {
                 this.tabActive = false
-                this._soundsMute(true)
+                this._soundsPause(true, 'act')
             }
+        }
+
+        window.oncontextmenu = function () {
+            return false;
         }
 
         this._loadResources()
@@ -347,10 +349,12 @@ class MGM {
         this.plane.onmousedown = e => {
             this.mouse.down = true
             this.mouse.up = false
+            this.mouse.which = e.which
         }
         this.plane.onmouseup = e => {
             this.mouse.down = false
             this.mouse.up = true
+            this.mouse.which = e.which
         }
     }
 
@@ -390,25 +394,15 @@ class MGM {
                 for (const k in this.object[j].pic) {
                     if (typeof this.object[j].pic[k] == 'string')
                         this.object[j]._pics[k] = this._loadPic(this.object[j].pic[k])
-                    if (typeof this.object[j].pic[k] == 'object') {
+                    if (typeof this.object[j].pic[k] == 'object')
                         this.object[j]._pics[k] = this.object[j].pic[k]
-                    }
                 }
             }
 
-        if (this._audioCtxOk === undefined) {
-            for (const j in this.object)
-                if (this.object[j].sounds)
-                    for (let k in this.object[j].sounds)
-                        this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
-        } else {
-            for (const j in this.object)
-                if (this.object[j].sounds) {
-                    if (!this.object[j].sounds) this.object[j].sounds = {}
-                    for (const k in this.object[j].sounds)
-                        this._loadSoundCtx(this.object[j].sounds[k], j, k)
-                }
-        }
+        for (const j in this.object)
+            if (this.object[j].sounds)
+                for (let k in this.object[j].sounds)
+                    this.object[j].sounds[k] = this._loadSound(this.object[j].sounds[k])
 
         let loadWait = setInterval(() => {
             this.curtainIn.innerHTML = '<b>MGM.js</b><br><br><br>Loading<br><br>' + this._build.resLoad + " / " + this._build.resAll
@@ -444,7 +438,9 @@ class MGM {
         setTimeout(() => {
             this._initObjs()
             this.curtain.style.display = 'none'
-            this._loop()
+            this._loopItv = setInterval(() => {
+                this._loop()
+            }, this._fpsTm)
         }, 0)
     }
 
@@ -527,53 +523,61 @@ class MGM {
     }
 
 
-    _loadSound(src) {
+    _loadSound(prm) {
+        let src = prm
+        if (typeof prm == 'object') src = prm.src
+
         this._build.resAll++
-        const snd = new Audio()
-        snd.src = src
-        snd.onloadstart = () => {
+
+        const sound = new Audio()
+        sound.src = src
+
+        if (prm.volume !== undefined) sound.volume = prm.volume
+        if (prm.loop !== undefined) sound.loop = prm.loop
+        if (prm.onended !== undefined) sound.onended = prm.onended
+
+        sound.onloadstart = () => {
             this._build.resLoad++
         }
-        return snd
-    }
-
-
-    _loadSoundCtx(src, j, k) {
-        this._build.resAll++
-
-        let request = new XMLHttpRequest()
-        request.open('GET', src, true)
-        request.responseType = 'arraybuffer'
-        request.onload = () => {
-            this.audioCtx.decodeAudioData(request.response, buffer => {
-                const sound = {
-                    buffer: buffer,
-                    end: true,
-                    muteVol: 0,
-                    muted: false,
-                    src: src,
-                    duration: buffer.duration
+        sound._actPause = false
+        sound._setActPause = (paused, snd) => {
+            if (paused) {
+                if (!snd.paused) {
+                    snd.pause()
+                    snd._actPause = true
                 }
-
-                sound._setMuted = muted => {
-                    sound.muted = muted
-                    if (!sound.gainNode) return
-                    if (muted) {
-                        sound.muteVol = sound.gainNode.gain.value
-                        sound.gainNode.gain.value = 0
-                    } else {
-                        sound.gainNode.gain.value = sound.muteVol
-                    }
+            } else {
+                if (snd._actPause) {
+                    snd.play()
+                    snd._actPause = false
                 }
-
-                this.object[j].sounds[k] = sound
-                this._build.resLoad++
-
-            }, function (error) {
-                console.error('decodeAudioData error', error)
-            });
+            }
         }
-        request.send()
+        sound._runPause = false
+        sound._setRunPause = (paused, snd) => {
+            if (paused) {
+                if (!snd.paused) {
+                    snd.pause()
+                    snd._runPause = true
+                }
+            } else {
+                if (snd._runPause) {
+                    snd.play()
+                    snd._runPause = false
+                }
+            }
+        }
+        sound.stop = () => {
+            sound.pause()
+            sound.currentTime = 0
+        }
+        sound.start = function () {
+            this.pause()
+            this.currentTime = 0
+            this.play()
+        }
+
+        return sound
     }
 
 
@@ -711,7 +715,10 @@ class MGM {
         let html = false
 
         this._htmls.forEach(ht => {
-            if (this.mouse.px > ht.x1 && this.mouse.px < ht.x2 && this.mouse.py > ht.y1 && this.mouse.py < ht.y2)
+            if (this.mouse.px > ht.x1 &&
+                this.mouse.px < ht.x2 &&
+                this.mouse.py > ht.y1 &&
+                this.mouse.py < ht.y2)
                 html = true
         })
 
@@ -719,6 +726,9 @@ class MGM {
     }
 
     _loop() {
+        if (!this.RUN) return
+        if (!this.tabActive) return
+
         if (this.params.log) this._consDiv.innerHTML = ''
 
         this._touchLoop()
@@ -741,13 +751,9 @@ class MGM {
             this._consDiv.scrollTop = 10000
         }
 
-        if (this.RUN) requestAnimationFrame(() => this._loop())
-        else this._soundsStop()
     }
 
     _loopDraw() {
-
-
         const mas = []
         const gr = 0
         for (const obj of this.objects) {
@@ -794,7 +800,6 @@ class MGM {
             for (const obj of mas)
                 if (obj.z == z)
                     obj._draw()
-
     }
 
     _loopUpdate() {
@@ -821,38 +826,29 @@ class MGM {
         }
     }
 
-    _soundsStop() {
-        for (const obj of this.objects) {
-            if (obj.stop) obj.stop()
-            obj._soundStopAll()
-        }
-        for (const obj of this.noconts) {
-            if (obj.stop) obj.stop()
-            obj._soundStopAll()
-        }
-    }
-
-    _soundsMute(muted) {
+    _soundsPause(paused, tip) {
         if (!this.objects && !this.noconts) return
 
-        for (const obj of this.objects) if (obj.sounds) {
-            if (!this._audioCtxOk) {
-                for (const j in obj.sounds)
-                    obj.sounds[j].muted = muted
-            } else {
-                for (const j in obj.sounds)
-                    obj.sounds[j]._setMuted(muted)
-            }
+        if (tip == 'act') {
+            for (const obj of this.objects)
+                if (obj.sounds)
+                    for (const j in obj.sounds)
+                        obj.sounds[j]._setActPause(paused, obj.sounds[j])
+            for (const obj of this.noconts)
+                if (obj.sounds)
+                    for (const j in obj.sounds)
+                        obj.sounds[j]._setActPause(paused, obj.sounds[j])
         }
 
-        for (const obj of this.noconts) if (obj.sounds) {
-            if (!this._audioCtxOk) {
-                for (const j in obj.sounds)
-                    obj.sounds[j].muted = muted
-            } else {
-                for (const j in obj.sounds)
-                    obj.sounds[j]._setMuted(muted)
-            }
+        if (tip == 'run') {
+            for (const obj of this.objects)
+                if (obj.sounds)
+                    for (const j in obj.sounds)
+                        obj.sounds[j]._setRunPause(paused, obj.sounds[j])
+            for (const obj of this.noconts)
+                if (obj.sounds)
+                    for (const j in obj.sounds)
+                        obj.sounds[j]._setRunPause(paused, obj.sounds[j])
         }
     }
 
@@ -894,27 +890,6 @@ class MGM {
             if (a === obj) return true
     }
 
-    _loadMap(url) {
-        if (!url) return
-        const s = document.createElement('script')
-        document.head.appendChild(s)
-        s.src = url
-        s.onload = () => {
-            console.log('load map: ' + url)
-            console.log(Map);
-            for (const obj of Map.map) {
-                console.log(obj);
-                const prm = {
-                    name: obj.objName,
-                    _mgm: this,
-                    active: true,
-                }
-                for (const k in obj)
-                    prm[k] = obj[k]
-                console.log(prm);
-            }
-        }
-    }
 
 
 
@@ -929,12 +904,13 @@ class MGM {
 
     pause() {
         this.RUN = false
+        this._soundsPause(true, 'run')
     }
 
 
     run() {
         this.RUN = true
-        this._loop()
+        this._soundsPause(false, 'run')
     }
 
 
@@ -946,6 +922,8 @@ class MGM {
             this.curtainIn.innerHTML = txt || this.params.stopText
             this.curtain.style.display = 'flex'
         }
+        clearInterval(this._loopItv)
+        this._soundsPause(true, 'run')
     }
 
 
@@ -1105,7 +1083,7 @@ class MGM {
 
 
 
-    
+
 
 }
 
@@ -1143,7 +1121,7 @@ class MGMObject {
         if (obj === undefined) {
             obj = params
         }
-        
+
         if (!obj.nocont && params._mgm.objects.length > 10000) return
         if (obj.nocont && params._mgm.noconts.length > 10000) return
 
@@ -1151,10 +1129,22 @@ class MGMObject {
         for (const j in obj) {
             const v = obj[j]
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
-                j == 'anim' || j == '_animName' || j == 'sounds' ||
+                j == 'anim' || j == '_animName' || j == 'sounds111' ||
                 j == 'name' || j == '_mgm' || j == '_obj' ||
+                j == 'obj' ||
                 typeof v == 'function') this[j] = v
-            else {
+            else if (j == 'sounds') {
+                this[j] = {}
+                for (const s in v) {
+                    this[j][s] = v[s].cloneNode()
+                    this[j][s].start = v[s].start
+                    this[j][s].stop = v[s].stop
+                    this[j][s]._setActPause = v[s]._setActPause
+                    this[j][s]._setRunPause = v[s]._setRunPause
+                    this[j][s].volume = v[s].volume
+                    this[j][s].loop = v[s].loop
+                }
+            } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
             }
         }
@@ -1183,6 +1173,7 @@ class MGMObject {
                 name: undefined,
                 pics: undefined,
                 length: 0,
+                func: null
             }
 
         if (!this.isClone && this.init) this.init(this)
@@ -1242,7 +1233,6 @@ class MGMObject {
 
         if (this.flipXV === undefined) this.flipXV = 1
         if (this.flipYV === undefined) this.flipYV = 1
-
 
         if (typeof this.pic != 'string')
             if (!this.picName)
@@ -1321,10 +1311,11 @@ class MGMObject {
             else this.flipYV = -1
 
         if (this._anima && this._anima.name && this._drawing) {
-            if (this._anima.sch >= this.anim.speed) {
+            if (this._anima.sch == this.anim.speed) {
                 this._anima.sch = 0
                 this._anima.frame++
                 if (this._anima.frame >= this._anima.length) this._anima.frame = 0
+                if (this._anima.func) this._anima.func()
             }
             if (this._anima.sch == 0) this.picName = this._anima.pics[this._anima.frame]
             this._anima.sch++
@@ -1416,7 +1407,6 @@ class MGMObject {
     _setScope() {
         this._image = this._getPic()
 
-
         if (this._image) {
             if (this.width === undefined) this._widthA = this._image.width
             else this._widthA = this.width
@@ -1463,17 +1453,12 @@ class MGMObject {
     }
 
 
-
-
-
-
-
-
+    getAnim() {
+        return this._anima.name
+    }
 
 
     _draw() {
-
-
         if (this.onCamera === undefined) {
             this._cameraZXm = - this._mgm.camera.x * this.cameraZX
             this._camersZYm = this._mgm.camera.y * this.cameraZY
@@ -1960,133 +1945,6 @@ class MGMObject {
     }
 
 
-
-
-    soundPlay(prm = {}) {
-        if (prm.volume === undefined) prm.volume = 1
-        if (prm.volume < 0) prm.volume = 0
-
-        const sound = this._getSound(prm)
-
-        if (this._mgm._audioCtxOk) this._soundPlayCtx(prm, sound)
-        else this._soundPlay(prm, sound)
-    }
-
-
-    _getSound(prm) {
-        let sound
-
-        if (!prm.name) sound = this._mgm._firstV(this.sounds)
-        else sound = this.sounds[prm.name]
-
-        return sound
-    }
-
-
-    _soundPlay(prm, sound) {
-        if (!prm.loop) {
-            if (prm.toend)
-                if (sound.currentTime == 0 || sound.currentTime >= sound.duration)
-                    this._soundStart(sound, prm.volume)
-            if (!prm.toend) this._soundStart(sound, prm.volume)
-        }
-        else {
-            if (!sound.mloop) {
-                this._soundStart(sound, prm.volume)
-                sound.mloop = setInterval(() => this._soundStart(sound, prm.volume), sound.duration * 1000)
-            }
-        }
-    }
-
-
-    _soundStart(sound, vol) {
-        sound.pause();
-        sound.volume = vol;
-        sound.currentTime = 0;
-        sound.play()
-    }
-
-
-    soundStop(name) {
-
-        const sound = this._getSound(prm)
-
-        if (sound.mloop) {
-            clearInterval(sound.mloop)
-            sound.mloop = null
-        }
-
-        sound.pause()
-        sound.currentTime = 0
-    }
-
-
-    _soundPlayCtx(prm, sound) {
-        if (prm.pan === undefined) prm.pan = 0
-
-        sound.source = this._mgm.audioCtx.createBufferSource()
-        sound.source.buffer = sound.buffer
-
-        const panNode = this._mgm.audioCtx.createStereoPanner()
-        panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
-        panNode.connect(this._mgm.audioCtx.destination)
-        sound.panNode = panNode
-
-        let gainNode = this._mgm.audioCtx.createGain()
-        gainNode.gain.value = prm.volume
-        gainNode.connect(panNode)
-        sound.source.connect(gainNode)
-        sound.gainNode = gainNode
-
-        if (sound.muted) sound._setMuted(true)
-
-        if (prm.loop) sound.source.loop = true
-
-        sound.source.onended = () => {
-            sound.end = true
-        }
-
-        if (prm.toend && sound.end) {
-            sound.source.start(0)
-            sound.on = true
-            sound.end = false
-        }
-        if (!prm.toend) {
-            sound.source.start(0)
-            sound.on = true
-        }
-    }
-
-
-    soundPrm(prm) {
-        if (prm.name === undefined) return
-
-        if (prm.volume !== undefined) {
-            if (this._mgm._audioCtxOk) this.sounds[prm.name].gainNode.gain.value = prm.volume
-            else this.sounds[prm.name].volume = prm.volume
-        }
-
-        if (prm.pan !== undefined) {
-            if (this._mgm._audioCtxOk) this.sounds[prm.name].panNode.pan.setValueAtTime(prm.pan, this._mgm.audioCtx.currentTime)
-        }
-    }
-
-
-    _soundStopAll() {
-        if (!this.sounds) return
-
-        if (!this._mgm._audioCtxOk) {
-            for (const j in this.sounds)
-                this.sounds[j].pause()
-        } else {
-            for (const j in this.sounds)
-                if (this.sounds[j].on)
-                    this.sounds[j].source.stop(0)
-        }
-    }
-
-
-
     clone(prm) {
         if (!prm) prm = {}
         prm._obj = this
@@ -2162,9 +2020,7 @@ class MGMObject {
             } else wait.sch++
         }
     }
-
-
-
+    
 
     getStep(angle, dist) {
         const coord = this._mgm.getStep(angle, dist)
