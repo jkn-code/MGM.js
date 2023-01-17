@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.21');
+console.log('MGM.js 1.22');
 
 class MGM {
     constructor(params) {
@@ -22,6 +22,7 @@ class MGM {
         if (this.params.autorun !== false) this.params.autorun = true
         if (this.params.fpsLimit === undefined) this.params.fpsLimit = 60
         this._fpsTm = 1000 / this.params.fpsLimit
+        if (this.params.fontRatio === undefined) this.params.fontRatio = 1
 
         this._initHTML()
         this._initCanvasPlane()
@@ -29,8 +30,8 @@ class MGM {
         this._initMouse()
         this._initKeys()
 
-        this._resizeWin()
-        window.onresize = () => this._resizeWin()
+        this.resizeWin()
+        window.onresize = () => this.resizeWin()
 
         if (this.params.borders) {
             this.params.borders = this.params.borders.split(',')
@@ -94,7 +95,7 @@ class MGM {
             background-color: `+ (this.params.bodyColor || '#eee') + `;
             font-family: `+ (this.params.textFont || 'Tahoma') + `;
             color: `+ (this.params.textColor || '#555') + `;
-            font-size: 10px;
+            1font-size: 100px;
             overflow: hidden;
             user-select: none;
             margin: 0px;
@@ -132,18 +133,15 @@ class MGM {
             document.title = this.params.name
         }
 
-        if (!document.querySelector('.mgm-curtain')) {
-            this.curtain = document.createElement('div')
-            document.body.appendChild(this.curtain)
-            this.curtain.classList.add('mgm-curtain')
-        } else this.curtain = document.querySelector('.mgm-curtain')
-        this.curtain.style.cssText = `
+
+        if (mgmCurtain) this.curtain = mgmCurtain
+
+        this.curtain.style.cssText += `
             position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%);
-            height: 100vh; 
-            width: 100vw; 
+            top: 0; 
+            left: 0; 
+            height: 100%; 
+            width: 100%; 
             background: ` + document.body.style.backgroundColor + `; 
             z-index: 9999; 
             cursor: pointer;
@@ -168,50 +166,24 @@ class MGM {
         `
         if (this.params.pixel) this.canvas.style.cssText += 'image-rendering: pixelated; image-rendering: crisp-edges;'
 
-        this._defaultContext = {
+        this._defCtxText = {
             textAlign: 'left',
             fontColor: document.body.style.color,
-            fontSize: 20,
+            fontSize: 25,
             fontFamily: 'Tahoma',
             fontWeight: 'normal',
         }
         this.context = this.canvas.getContext('2d')
-        this.context.font = '48px serif'
         if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
         document.body.appendChild(this.canvas)
 
-        if (this.params.canvasFilter) this.canvas.style.filter = this.params.canvasFilter
+        if (this.params.canvasFilter) 
+            this.canvas.style.filter = this.params.canvasFilter
 
-        this.plane = document.createElement('div')
-        this.plane.classList.add('mgm-plane')
-        this.plane.style.cssText = `
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            position: absolute;
-        `
-        document.body.appendChild(this.plane)
 
-        let allMgms = document.querySelectorAll('.mgm')
-        for (const e of allMgms)
-            this.plane.appendChild(e)
 
-        this._crtHtmlId(this.plane)
-        this._resizeWin()
+        this.resizeWin()
 
-        this._htmls = []
-        for (const e of allMgms) {
-            const cpos = e.getBoundingClientRect()
-            const left = cpos.left - this.plane.cpos.left
-            const top = cpos.top - this.plane.cpos.top
-            this._htmls.push({
-                el: e,
-                x1: left,
-                y1: top,
-                x2: left + cpos.width,
-                y2: top + cpos.height,
-            })
-        }
     }
 
 
@@ -230,8 +202,8 @@ class MGM {
             this.touches = e.touches
             for (let i = 0; i < this.touches.length; i++) {
                 const ti = this.touches[i]
-                ti.px = ti.clientX - this.plane.cpos.left
-                ti.py = ti.clientY - this.plane.cpos.top
+                ti.px = ti.clientX - this.canvas.cpos.left
+                ti.py = ti.clientY - this.canvas.cpos.top
                 ti.x = ti.px / this.kfHeight - this.canvCX + this.camera.x
                 ti.y = -ti.py / this.kfHeight + this.canvCY + this.camera.y
             }
@@ -279,8 +251,8 @@ class MGM {
                 document.body.appendChild(btn)
                 this.touch[name] = false
                 const cpos = btn.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
+                const left = cpos.left - this.canvas.cpos.left
+                const top = cpos.top - this.canvas.cpos.top
                 this._touchBtns.push({
                     el: btn,
                     name: name,
@@ -305,8 +277,8 @@ class MGM {
                 document.body.appendChild(stick)
                 this.touch[name] = false
                 const cpos = stick.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
+                const left = cpos.left - this.canvas.cpos.left
+                const top = cpos.top - this.canvas.cpos.top
                 this._touchSticks.push({
                     el: stick,
                     name: name,
@@ -339,19 +311,21 @@ class MGM {
 
     _initMouse() {
         if (this.isMobile) return
+
         this.mouse = { x: 0, y: 0, px: 0, py: 0, }
-        this.plane.onmousemove = e => {
-            this.mouse.px = e.pageX - this.plane.cpos.left
-            this.mouse.py = e.pageY - this.plane.cpos.top
+
+        this.canvas.onmousemove = e => {
+            this.mouse.px = e.pageX - this.canvas.cpos.left
+            this.mouse.py = e.pageY - this.canvas.cpos.top
             this.mouse.x = this.mouse.px / this.kfHeight - this.canvCX + this.camera.x
             this.mouse.y = -this.mouse.py / this.kfHeight + this.canvCY + this.camera.y
         }
-        this.plane.onmousedown = e => {
+        this.canvas.onmousedown = e => {
             this.mouse.down = true
             this.mouse.up = false
             this.mouse.which = e.which
         }
-        this.plane.onmouseup = e => {
+        this.canvas.onmouseup = e => {
             this.mouse.down = false
             this.mouse.up = true
             this.mouse.which = e.which
@@ -427,13 +401,13 @@ class MGM {
         if (this.params.fullscreen && this.params.autorun === false)
             this._toggleFullScreen()
         this.curtainIn.innerHTML = ''
-        if (this.params.cursor === false) this.plane.style.cursor = 'none'
+        if (this.params.cursor === false) document.body.style.cursor = 'none'
         this.objects = []
         this.noconts = []
         this.RUN = true
         this.zList = []
         this.objectsId = 0
-        this._resizeWin()
+        this.resizeWin()
 
         setTimeout(() => {
             this._initObjs()
@@ -492,24 +466,6 @@ class MGM {
     }
 
 
-    _crtHtmlId(el) {
-        let chel = el.childNodes
-        let th = this
-        for (let i = 0; i < chel.length; i++) {
-            if (chel[i].id && chel[i].id != '') {
-                this[chel[i].id] = chel[i]
-                this[chel[i].id].show = function () {
-                    this.style.display = 'block'
-                    th._getHtmlBorders()
-                }
-                this[chel[i].id].hide = function () {
-                    this.style.display = 'none'
-                    th._getHtmlBorders()
-                }
-            }
-            this._crtHtmlId(chel[i])
-        }
-    }
 
 
     _loadPic(src) {
@@ -581,7 +537,7 @@ class MGM {
     }
 
 
-    _resizeWin() {
+    resizeWin() {
         this.params.ratio = this.params.ratio || 1
         if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
 
@@ -603,52 +559,45 @@ class MGM {
         this.canvCX = this.canvas.width / 2
         this.canvCY = this.canvas.height / 2
 
-        const cpos = this.canvas.getBoundingClientRect()
-        this.plane.cpos = cpos
-        this.plane.style.top = cpos.top + 'px'
-        this.plane.style.left = cpos.left + 'px'
-        this.plane.style.width = cpos.width + 'px'
-        this.plane.style.height = cpos.height + 'px'
+        this.canvas.cpos = this.canvas.getBoundingClientRect()
 
-        document.body.style.fontSize = (this.params.fontSize || (h / 40)) + 'px'
+        document.body.style.fontSize = (this.params.fontRatio * (h / 40)) + 'px'
 
-        this._getHtmlBorders()
-    }
+        const cpos = this.canvas.cpos
+        let kh = cpos.height / this.params.quality
 
+        document.querySelectorAll('.mgm').forEach(el => {
+            el.style.position = 'absolute'
+            if (el.style.zIndex == '') el.style.zIndex = 1
+            if (el.style.boxSizing == '') el.style.boxSizing = 'border-box'
 
-    _getHtmlBorders() {
-        if (this.touch) {
-            this._touchSticks.forEach(stick => {
-                const cpos = stick.el.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
-                stick.x1 = left
-                stick.y1 = top
-                stick.x2 = left + cpos.width
-                stick.y2 = top + cpos.height
-                stick.px = left + 60
-                stick.py = top + 60
-            })
-            this._touchBtns.forEach(btn => {
-                const cpos = btn.el.getBoundingClientRect()
-                const left = cpos.left - this.plane.cpos.left
-                const top = cpos.top - this.plane.cpos.top
-                btn.x1 = left
-                btn.y1 = top
-                btn.x2 = left + cpos.width
-                btn.y2 = top + cpos.height
-            })
-        }
-        if (this._htmls) this._htmls.forEach(ht => {
-            const cpos = ht.el.getBoundingClientRect()
-            const left = cpos.left - this.plane.cpos.left
-            const top = cpos.top - this.plane.cpos.top
-            ht.x1 = left
-            ht.y1 = top
-            ht.x2 = left + cpos.width
-            ht.y2 = top + cpos.height
+            let left = parseInt(el.getAttribute('mgm-left'))
+            let right = parseInt(el.getAttribute('mgm-right'))
+            let top = parseInt(el.getAttribute('mgm-top'))
+            let bottom = parseInt(el.getAttribute('mgm-bottom'))
+            let x = el.getAttribute('mgm-x')
+            let y = el.getAttribute('mgm-y')
+            let w = el.getAttribute('mgm-width')
+            let h = el.getAttribute('mgm-height')
+
+            if (left) el.style.left = (cpos.left + left * kh) + 'px'
+            if (right) el.style.left = (cpos.right - (w * kh) - right * kh) + 'px'
+            if (top) el.style.top = (cpos.top + top * kh) + 'px'
+            if (bottom) el.style.top = (cpos.bottom - bottom * kh) + 'px'
+            if (x) el.style.left = (cpos.left + this.canvCX * kh + x * kh) + 'px'
+            if (y) el.style.top = (cpos.top + this.canvCY * kh + y * kh) + 'px'
+            el.style.width = (w * kh) + 'px'
+            el.style.height = (h * kh) + 'px'
+            if (el.style.padding != '') {
+                if (!el.mgmPadding) el.mgmPadding = parseInt(el.style.padding.replace('px', ''))
+                el.style.padding = (el.mgmPadding * kh) + 'px'
+            }
         })
+
+
     }
+
+
 
 
     _firstV(m) {
@@ -684,6 +633,7 @@ class MGM {
 
         for (let i = 0; i < this.touches.length; i++) {
             const ti = this.touches[i]
+
             this._touchBtns.forEach(btn => {
                 if (ti.px > btn.x1 && ti.px < btn.x2 && ti.py > btn.y1 && ti.py < btn.y2) {
                     this.touch[btn.name] = true
@@ -695,35 +645,20 @@ class MGM {
                 if (ti.px > stick.x1 && ti.px < stick.x2 && ti.py > stick.y1 && ti.py < stick.y2) {
                     const d = this.distanceXY(ti.px, ti.py, stick.px, stick.py)
                     if (d > stick.d1 && d < stick.d2)
-                        this.touch[stick.name] = this.angleXY(stick.px, stick.py, ti.px, ti.py)
+                        this.touch[stick.name] = -this.angleXY(stick.px, stick.py, ti.px, ti.py) + 180
+                    if (this.touch[stick.name] > 180) this.touch[stick.name] -= 360
                     if (d < stick.d2) joy = true
                 }
             })
 
-            this._htmls.forEach(ht => {
-                if (ti.px > ht.x1 && ti.px < ht.x2 && ti.py > ht.y1 && ti.py < ht.y2)
-                    html = true
-            })
         }
 
         if (joy || html) this.touch.down = false
     }
 
-    _mouseLoop() {
-        if (!this.mouse) return
 
-        let html = false
 
-        this._htmls.forEach(ht => {
-            if (this.mouse.px > ht.x1 &&
-                this.mouse.px < ht.x2 &&
-                this.mouse.py > ht.y1 &&
-                this.mouse.py < ht.y2)
-                html = true
-        })
 
-        if (html) this.mouse.down = false
-    }
 
     _loop() {
         if (!this.RUN) return
@@ -732,7 +667,6 @@ class MGM {
         if (this.params.log) this._consDiv.innerHTML = ''
 
         this._touchLoop()
-        this._mouseLoop()
 
         if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
@@ -976,6 +910,7 @@ class MGM {
 
 
     angleObj(obj1, obj2) {
+        if (!obj1 || !obj2) return
         if (obj1.active === false) return
         if (obj2.active === false) return
         return this.angleXY(obj1.x, obj1.y, obj2.x, obj2.y)
@@ -988,6 +923,7 @@ class MGM {
 
 
     distanceObj(obj1, obj2) {
+        if (!obj1 || !obj2) return
         if (obj1.active === false) return
         if (obj2.active === false) return
         return this.distanceXY(obj1.x, obj1.y, obj2.x, obj2.y)
@@ -1577,12 +1513,12 @@ class MGMObject {
         if (prm.absolute !== true && pos == 2) return
         if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (prm.color) this._mgm.context.fillStyle = prm.color
-        else this._mgm.context.fillStyle = this._mgm._defaultContext.fontColor
-        prm.fontSize = (prm.size || this._mgm._defaultContext.fontSize) + 'px'
-        if (!prm.family) prm.family = this._mgm._defaultContext.fontFamily
-        if (!prm.weight) prm.weight = this._mgm._defaultContext.fontWeight
+        else this._mgm.context.fillStyle = this._mgm._defCtxText.fontColor
+        prm.fontSize = (prm.size || this._mgm._defCtxText.fontSize) + 'px'
+        if (!prm.family) prm.family = this._mgm._defCtxText.fontFamily
+        if (!prm.weight) prm.weight = this._mgm._defCtxText.fontWeight
         if (prm.align) this._mgm.context.textAlign = prm.align
-        else this._mgm.context.textAlign = this._mgm._defaultContext.textAlign
+        else this._mgm.context.textAlign = this._mgm._defCtxText.textAlign
         this._mgm.context.font = prm.weight + ' ' + prm.fontSize + ' ' + prm.family
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
@@ -1920,6 +1856,7 @@ class MGMObject {
     positionTo(prm) {
         let obj = prm
         if (typeof prm == 'string') obj = this._mgm.getObj(prm)
+        if (!obj) return
         this.x = obj.x
         this.y = obj.y
     }
@@ -2020,7 +1957,7 @@ class MGMObject {
             } else wait.sch++
         }
     }
-    
+
 
     getStep(angle, dist) {
         const coord = this._mgm.getStep(angle, dist)
