@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.23');
+console.log('MGM.js 1.24');
 
 class MGM {
     constructor(params) {
@@ -180,6 +180,7 @@ class MGM {
         }
         this.context = this.canvas.getContext('2d')
         if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
+        if (this.params.cursor === false) this.canvas.style.cursor = 'none'
         document.body.appendChild(this.canvas)
 
         if (this.params.canvasFilter)
@@ -406,7 +407,6 @@ class MGM {
         if (this.params.fullscreen && this.params.autorun === false)
             this._toggleFullScreen()
         this.curtainIn.innerHTML = ''
-        if (this.params.cursor === false) document.body.style.cursor = 'none'
         this.objects = []
         this.noconts = []
         this.RUN = true
@@ -588,12 +588,12 @@ class MGM {
             let y = parseFloat(el.getAttribute('mgm-y'))
             let w = parseFloat(el.getAttribute('mgm-width'))
             let h = parseFloat(el.getAttribute('mgm-height'))
-            
+
             if (w != NaN) el.style.width = (w * kh) + 'px'
             if (h != NaN) el.style.height = (h * kh) + 'px'
 
             const elPos = el.getBoundingClientRect()
-            
+
             if (left != NaN) el.style.left = (cpos.left + left * kh) + 'px'
             if (right != NaN) el.style.left = (cpos.right - right * kh - elPos.width) + 'px'
             if (top != NaN) el.style.top = (cpos.top + top * kh) + 'px'
@@ -663,10 +663,9 @@ class MGM {
                     if (d < stick.d2) joy = true
                 }
             })
-
         }
 
-        if (joy || html) this.touch.down = false
+        if (joy) this.touch.down = false
     }
 
 
@@ -683,8 +682,8 @@ class MGM {
 
         if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-        this._loopDraw()
         this._loopUpdate()
+        this._loopDraw()
 
         for (let j in this.press) this.press[j] = false
         this.frame++
@@ -709,6 +708,12 @@ class MGM {
             if (obj.hidden) ok = false
             else if (obj.active === false) ok = false
             else if (obj._toDel === false) ok = false
+
+            if (obj._goStart === true) {
+                ok = false
+                delete obj._goStart
+            }
+
             if (ok)
                 if (obj.inDraw || obj.onCamera) draw = true
                 else if (obj.y - obj.collider._py + obj._height2 > obj._mgm.camera.y - obj._mgm.canvCY + gr &&
@@ -716,6 +721,7 @@ class MGM {
                     obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
                     obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
                 ) draw = true
+
             if (ok && draw) {
                 mas.push(obj)
                 obj._drawing = true
@@ -728,6 +734,12 @@ class MGM {
             if (obj.hidden) ok = false
             else if (obj.active === false) ok = false
             else if (obj._toDel === false) ok = false
+
+            if (obj._goStart === true) {
+                ok = false
+                delete obj._goStart
+            }
+
             if (ok)
                 if (obj.inDraw || obj.onCamera) draw = true
                 else if (obj.y - obj.collider._py + obj._height2 > obj._mgm.camera.y - obj._mgm.canvCY + gr &&
@@ -735,6 +747,7 @@ class MGM {
                     obj.x + obj.collider._px - obj._width2 < obj._mgm.camera.x + obj._mgm.canvCX - gr &&
                     obj.x + obj.collider._px + obj._width2 > obj._mgm.camera.x - obj._mgm.canvCX + gr
                 ) draw = true
+
             if (ok && draw) {
                 mas.push(obj)
                 obj._drawing = true
@@ -834,7 +847,8 @@ class MGM {
 
     _objInArr(obj, arr) {
         for (const a of arr)
-            if (a === obj) return true
+            if (a.objectId === obj.objectId)
+                return true
     }
 
 
@@ -1132,15 +1146,16 @@ class MGMObject {
                         this._pics[j]._pic = this._pics[this._pics[j].pic]
                 }
 
-        if (this.anim && !this._anima)
+        if (this.anim && !this._anima) {
             this._anima = {
                 frame: 0,
                 sch: 0,
                 name: undefined,
                 pics: undefined,
                 length: 0,
-                func: null
             }
+            if (this.anim.speed === undefined) this.anim.speed = 5
+        }
 
         if (!this.isClone && this.init) this.init(this)
 
@@ -1210,6 +1225,10 @@ class MGMObject {
         this._setScope()
         this._setPivot()
         this._setCollider()
+
+        this.collider._px = this.collider.px * this._width
+        this.collider._py = this.collider.py * this._height
+
     }
 
 
@@ -1224,16 +1243,16 @@ class MGMObject {
 
 
     _update() {
-        if (this.update && this.active)
-            this.update(this)
-
-        this._work()
-        this._waitsWork()
-
-        if (this._goStart && this.start) {
-            this.start(this)
+        if (this._goStart) {
+            if (this.start) this.start(this)
             this._setZLayer()
-            delete this._goStart
+            this._animaWork(true)
+        } else {
+            if (this.update && this.active)
+                this.update(this)
+
+            this._work()
+            this._waitsWork()
         }
     }
 
@@ -1243,6 +1262,7 @@ class MGMObject {
         if (this.angle > 180) this.angle -= 360
         if (this.anglePic) this.rotation = this.angle
 
+        this._animaWork()
         this._setScope()
 
         if (!this.nocont) {
@@ -1275,19 +1295,37 @@ class MGMObject {
         if (this.flipY)
             if (this.angle > 0 && this.angle < 90) this.flipYV = 1
             else this.flipYV = -1
+    }
 
-        if (this._anima && this._anima.name && this._drawing) {
-            if (this._anima.sch == this.anim.speed) {
-                this._anima.sch = 0
+
+    _animaWork(start) {
+        if (!this._anima) return
+        if (!this._anima.name) return
+        if (this._drawing || start) {
+            if (this._anima.sch == 0) {
+                this._anima.sch = this.anim.speed
+                this.picName = this._anima.pics[this._anima.frame]
                 this._anima.frame++
                 if (this._anima.frame >= this._anima.length) this._anima.frame = 0
-                if (this._anima.func) this._anima.func()
-            }
-            if (this._anima.sch == 0) this.picName = this._anima.pics[this._anima.frame]
-            this._anima.sch++
+            } else this._anima.sch--
         }
     }
 
+
+    setAnim(name, frame = 0) {
+        if (name == 'speed') return
+        if (name == this._anima.name) return
+        this._anima.name = name
+        this._anima.frame = frame
+        this._anima.sch = 0
+        this._anima.pics = this.anim[name]
+        this._anima.length = this.anim[name].length
+    }
+
+
+    getAnim() {
+        return this._anima.name
+    }
 
     _physicWork() {
         if (!this.physics) return
@@ -1405,22 +1443,6 @@ class MGMObject {
         this.collider.right = this.x + this.collider._pivotXR
         this.collider.top = this.y + this.collider._pivotYT
         this.collider.bottom = this.y - this.collider._pivotYB
-    }
-
-
-    setAnim(name, frame = 0) {
-        if (name == 'speed') return
-        if (name == this._anima.name) return
-        this._anima.name = name
-        this._anima.frame = frame
-        this._anima.sch = 0
-        this._anima.pics = this.anim[name]
-        this._anima.length = this.anim[name].length
-    }
-
-
-    getAnim() {
-        return this._anima.name
     }
 
 
@@ -1838,26 +1860,28 @@ class MGMObject {
 
     raycast(prm) {
         if (!prm) prm = {}
-        if (!prm.angle) prm.angle = 0
+        if (!prm.angle) prm.angle = this.angle
         if (!prm.steps) prm.steps = 40
         if (!prm.density) prm.density = 10
 
         let x = this.x, y = this.y
-        const rad = -(prm.angle - 90) * Math.PI / 180;
+        const rad = prm.angle * Math.PI / 180
         let ot = null
         if (prm.all) ot = []
+        let col = '#f00'
+        if (prm.visible && typeof prm.visible == 'string') col = prm.visible
 
         for (let i = 0; i < prm.steps; i++) {
-            x += prm.density * Math.cos(rad)
-            y += prm.density * Math.sin(rad)
+            x += prm.density * Math.sin(rad)
+            y += prm.density * Math.cos(rad)
 
             if (prm.visible) {
                 this._mgm.context.beginPath()
                 this._mgm.context.arc(
                     x + this._mgm.canvCX + this._cameraZXm,
                     -y + this._mgm.canvCY + this._camersZYm,
-                    5, 0, 2 * Math.PI)
-                this._mgm.context.fillStyle = 'red'
+                    3, 0, 2 * Math.PI)
+                this._mgm.context.fillStyle = col
                 this._mgm.context.fill()
                 this._mgm.context.restore()
             }
@@ -1953,8 +1977,8 @@ class MGMObject {
         else if (!this._wait[name]) {
             this._wait[name] = {}
             const wait = this._wait[name]
-            wait.sch = 0
             wait.frames = Math.round(frames)
+            wait.sch = wait.frames
             wait.repeat = false
             wait.func = func
         }
@@ -1967,8 +1991,8 @@ class MGMObject {
             if (!this._wait[name]) {
                 this._wait[name] = {}
                 const wait = this._wait[name]
-                wait.sch = 0
                 wait.frames = Math.round(frames)
+                wait.sch = wait.frames
                 wait.repeat = true
                 wait.func = func
                 func()
@@ -1980,11 +2004,11 @@ class MGMObject {
     _waitsWork() {
         for (const j in this._wait) {
             const wait = this._wait[j]
-            if (wait.sch == wait.frames) {
-                wait.func()
-                if (wait.repeat) wait.sch = 0
+            if (wait.sch == 0) {
+                if (wait.repeat) wait.sch = wait.frames
                 else delete this._wait[j]
-            } else wait.sch++
+                wait.func()
+            } else wait.sch--
         }
     }
 
