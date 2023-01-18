@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.22');
+console.log('MGM.js 1.23');
 
 class MGM {
     constructor(params) {
@@ -95,7 +95,6 @@ class MGM {
             background-color: `+ (this.params.bodyColor || '#eee') + `;
             font-family: `+ (this.params.textFont || 'Tahoma') + `;
             color: `+ (this.params.textColor || '#555') + `;
-            1font-size: 100px;
             overflow: hidden;
             user-select: none;
             margin: 0px;
@@ -134,7 +133,13 @@ class MGM {
         }
 
 
-        if (mgmCurtain) this.curtain = mgmCurtain
+
+        this.curtain = document.getElementById('mgmCurtain')
+        if (!this.curtain) {
+            this.curtain = document.createElement('div')
+            this.curtain.id = 'mgmCurtain'
+            document.body.appendChild(this.curtain)
+        }
 
         this.curtain.style.cssText += `
             position: absolute; 
@@ -177,7 +182,7 @@ class MGM {
         if (this.params.canvasColor) this.canvas.style.backgroundColor = this.params.canvasColor
         document.body.appendChild(this.canvas)
 
-        if (this.params.canvasFilter) 
+        if (this.params.canvasFilter)
             this.canvas.style.filter = this.params.canvasFilter
 
 
@@ -420,12 +425,14 @@ class MGM {
 
 
     reload(url) {
+        if (!url || url.trim() == '') return
         let w = setInterval(() => {
             if (this._build.isLoad) {
                 clearInterval(w)
                 this._reload(url)
             }
         }, 0)
+
     }
 
     _reload(url) {
@@ -433,7 +440,7 @@ class MGM {
         this.stop()
 
         this.object = {}
-        this.clearGame()
+        this.clearGame(false)
 
         let urls = []
         let scrAll = 0
@@ -459,10 +466,12 @@ class MGM {
     }
 
 
-    clearGame() {
+    clearGame(reObj = true) {
         this.objects = []
         this.noconts = []
         this.camera = { x: 0, y: 0 }
+        if (reObj) this._initObjs()
+
     }
 
 
@@ -541,27 +550,27 @@ class MGM {
         this.params.ratio = this.params.ratio || 1
         if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
 
-        let w = 0, h = 0
+        let width = 0, height = 0
 
-        h = innerHeight
-        w = innerHeight * this.params.ratio
-        if (w > innerWidth) {
-            h = innerWidth / this.params.ratio
-            w = innerWidth
+        height = innerHeight
+        width = innerHeight * this.params.ratio
+        if (width > innerWidth) {
+            height = innerWidth / this.params.ratio
+            width = innerWidth
         }
 
-        this.canvas.style.width = w + 'px'
-        this.canvas.style.height = h + 'px'
+        this.canvas.style.width = width + 'px'
+        this.canvas.style.height = height + 'px'
         this.params.quality = this.params.quality || 1000
         this.canvas.width = this.params.quality * this.params.ratio
         this.canvas.height = this.params.quality
-        this.kfHeight = h / this.params.quality
+        this.kfHeight = height / this.params.quality
         this.canvCX = this.canvas.width / 2
         this.canvCY = this.canvas.height / 2
 
         this.canvas.cpos = this.canvas.getBoundingClientRect()
 
-        document.body.style.fontSize = (this.params.fontRatio * (h / 40)) + 'px'
+        document.body.style.fontSize = (this.params.fontRatio * (height / 40)) + 'px'
 
         const cpos = this.canvas.cpos
         let kh = cpos.height / this.params.quality
@@ -571,28 +580,32 @@ class MGM {
             if (el.style.zIndex == '') el.style.zIndex = 1
             if (el.style.boxSizing == '') el.style.boxSizing = 'border-box'
 
-            let left = parseInt(el.getAttribute('mgm-left'))
-            let right = parseInt(el.getAttribute('mgm-right'))
-            let top = parseInt(el.getAttribute('mgm-top'))
-            let bottom = parseInt(el.getAttribute('mgm-bottom'))
-            let x = el.getAttribute('mgm-x')
-            let y = el.getAttribute('mgm-y')
-            let w = el.getAttribute('mgm-width')
-            let h = el.getAttribute('mgm-height')
+            let left = parseFloat(el.getAttribute('mgm-left'))
+            let right = parseFloat(el.getAttribute('mgm-right'))
+            let top = parseFloat(el.getAttribute('mgm-top'))
+            let bottom = parseFloat(el.getAttribute('mgm-bottom'))
+            let x = parseFloat(el.getAttribute('mgm-x'))
+            let y = parseFloat(el.getAttribute('mgm-y'))
+            let w = parseFloat(el.getAttribute('mgm-width'))
+            let h = parseFloat(el.getAttribute('mgm-height'))
+            
+            if (w != NaN) el.style.width = (w * kh) + 'px'
+            if (h != NaN) el.style.height = (h * kh) + 'px'
 
-            if (left) el.style.left = (cpos.left + left * kh) + 'px'
-            if (right) el.style.left = (cpos.right - (w * kh) - right * kh) + 'px'
-            if (top) el.style.top = (cpos.top + top * kh) + 'px'
-            if (bottom) el.style.top = (cpos.bottom - bottom * kh) + 'px'
-            if (x) el.style.left = (cpos.left + this.canvCX * kh + x * kh) + 'px'
-            if (y) el.style.top = (cpos.top + this.canvCY * kh + y * kh) + 'px'
-            el.style.width = (w * kh) + 'px'
-            el.style.height = (h * kh) + 'px'
+            const elPos = el.getBoundingClientRect()
+            
+            if (left != NaN) el.style.left = (cpos.left + left * kh) + 'px'
+            if (right != NaN) el.style.left = (cpos.right - right * kh - elPos.width) + 'px'
+            if (top != NaN) el.style.top = (cpos.top + top * kh) + 'px'
+            if (bottom != NaN) el.style.top = (cpos.bottom - bottom * kh - elPos.height) + 'px'
+            if (x != NaN) el.style.left = (cpos.left + this.canvCX * kh + x * kh) + 'px'
+            if (y != NaN) el.style.top = (cpos.top + this.canvCY * kh + y * kh) + 'px'
             if (el.style.padding != '') {
                 if (!el.mgmPadding) el.mgmPadding = parseInt(el.style.padding.replace('px', ''))
                 el.style.padding = (el.mgmPadding * kh) + 'px'
             }
         })
+
 
 
     }
@@ -833,18 +846,21 @@ class MGM {
         document.head.appendChild(s)
         s.src = url
         s.onload = () => console.log('load: ' + url)
+
     }
 
 
     pause() {
         this.RUN = false
         this._soundsPause(true, 'run')
+
     }
 
 
     run() {
         this.RUN = true
         this._soundsPause(false, 'run')
+
     }
 
 
@@ -858,11 +874,13 @@ class MGM {
         }
         clearInterval(this._loopItv)
         this._soundsPause(true, 'run')
+
     }
 
 
     restart(url = '') {
         location.href = url
+
     }
 
 
@@ -872,6 +890,7 @@ class MGM {
                 var t = c.split('=');
                 s[t[0]] = t[1]; return s;
             }, {});
+
     }
 
 
@@ -898,6 +917,7 @@ class MGM {
             if (Math.random() >= 0.5) return true
             else return false
         }
+
     }
 
 
@@ -906,6 +926,7 @@ class MGM {
         if (angle > 180) angle -= 360
         if (angle < -180) angle += 360
         return angle
+
     }
 
 
@@ -914,11 +935,13 @@ class MGM {
         if (obj1.active === false) return
         if (obj2.active === false) return
         return this.angleXY(obj1.x, obj1.y, obj2.x, obj2.y)
+
     }
 
 
     distanceXY(x1, y1, x2, y2) {
         return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
+
     }
 
 
@@ -927,6 +950,7 @@ class MGM {
         if (obj1.active === false) return
         if (obj2.active === false) return
         return this.distanceXY(obj1.x, obj1.y, obj2.x, obj2.y)
+
     }
 
 
@@ -934,6 +958,7 @@ class MGM {
         prm._mgm = this
         const obj = new MGMObject(prm)
         return obj
+
     }
 
 
@@ -941,6 +966,7 @@ class MGM {
         for (const obj of this.objects)
             if (obj.active !== false && obj[key] == prm)
                 return obj
+
     }
 
 
@@ -958,6 +984,7 @@ class MGM {
                     ot.push(obj)
 
         return ot
+
     }
 
 
@@ -967,6 +994,7 @@ class MGM {
             x: dist * Math.sin(rad),
             y: dist * Math.cos(rad)
         }
+
     }
 
 
@@ -1005,11 +1033,13 @@ class MGM {
 
     round(n, t) {
         return Math.round(n * t) / t
+
     }
 
 
     log(s) {
         this._logs.push(s)
+
     }
 
 
