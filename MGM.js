@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.24');
+console.log('MGM.js 1.25');
 
 class MGM {
     constructor(params) {
@@ -12,6 +12,7 @@ class MGM {
         this.camera = { x: 0, y: 0 }
         this.tabActive = true
         this.objIds = 0
+        this.sch100 = 0
 
         window.onload = () => this._init()
     }
@@ -21,8 +22,10 @@ class MGM {
 
         if (this.params.autorun !== false) this.params.autorun = true
         if (this.params.fpsLimit === undefined) this.params.fpsLimit = 60
-        this._fpsTm = 1000 / this.params.fpsLimit
+        this._fpsTime = 1000 / this.params.fpsLimit
         if (this.params.fontRatio === undefined) this.params.fontRatio = 1
+        this.params.ratio = this.params.ratio || 1
+        if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
 
         this._initHTML()
         this._initCanvasPlane()
@@ -155,7 +158,9 @@ class MGM {
             justify-content: center;`
         this.curtainIn = document.createElement('div')
         this.curtain.appendChild(this.curtainIn)
-        this.curtainIn.style.cssText = 'text-align: center;'
+        this.curtainIn.style.cssText = 'text-align: center; padding: 30px;'
+        if (this.params.startStyle)
+            this.curtainIn.style.cssText += this.params.startStyle
         this.curtainIn.innerHTML = 'Loading'
     }
 
@@ -419,7 +424,7 @@ class MGM {
             this.curtain.style.display = 'none'
             this._loopItv = setInterval(() => {
                 this._loop()
-            }, this._fpsTm)
+            }, this._fpsTime)
         }, 0)
     }
 
@@ -547,13 +552,8 @@ class MGM {
 
 
     resizeWin() {
-        this.params.ratio = this.params.ratio || 1
-        if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
-
-        let width = 0, height = 0
-
-        height = innerHeight
-        width = innerHeight * this.params.ratio
+        let height = innerHeight
+        let width = innerHeight * this.params.ratio
         if (width > innerWidth) {
             height = innerWidth / this.params.ratio
             width = innerWidth
@@ -567,27 +567,25 @@ class MGM {
         this.kfHeight = height / this.params.quality
         this.canvCX = this.canvas.width / 2
         this.canvCY = this.canvas.height / 2
-
         this.canvas.cpos = this.canvas.getBoundingClientRect()
-
         document.body.style.fontSize = (this.params.fontRatio * (height / 40)) + 'px'
 
         const cpos = this.canvas.cpos
-        let kh = cpos.height / this.params.quality
+        const kh = cpos.height / this.params.quality
 
         document.querySelectorAll('.mgm').forEach(el => {
             el.style.position = 'absolute'
             if (el.style.zIndex == '') el.style.zIndex = 1
             if (el.style.boxSizing == '') el.style.boxSizing = 'border-box'
 
-            let left = parseFloat(el.getAttribute('mgm-left'))
-            let right = parseFloat(el.getAttribute('mgm-right'))
-            let top = parseFloat(el.getAttribute('mgm-top'))
-            let bottom = parseFloat(el.getAttribute('mgm-bottom'))
-            let x = parseFloat(el.getAttribute('mgm-x'))
-            let y = parseFloat(el.getAttribute('mgm-y'))
-            let w = parseFloat(el.getAttribute('mgm-width'))
-            let h = parseFloat(el.getAttribute('mgm-height'))
+            const left = parseFloat(el.getAttribute('mgm-left'))
+            const right = parseFloat(el.getAttribute('mgm-right'))
+            const top = parseFloat(el.getAttribute('mgm-top'))
+            const bottom = parseFloat(el.getAttribute('mgm-bottom'))
+            const x = parseFloat(el.getAttribute('mgm-x'))
+            const y = parseFloat(el.getAttribute('mgm-y'))
+            const w = parseFloat(el.getAttribute('mgm-width'))
+            const h = parseFloat(el.getAttribute('mgm-height'))
 
             if (w != NaN) el.style.width = (w * kh) + 'px'
             if (h != NaN) el.style.height = (h * kh) + 'px'
@@ -614,12 +612,12 @@ class MGM {
 
 
     _firstV(m) {
-        for (let v in m) return m[v]
+        for (const v in m) return m[v]
     }
 
 
     _firstJ(m) {
-        for (let j in m) return j
+        for (const j in m) return j
     }
 
 
@@ -642,7 +640,6 @@ class MGM {
         this._touchBtns.forEach(btn => this.touch[btn.name] = false)
         this._touchSticks.forEach(stick => this.touch[stick.name] = false)
         let joy = false
-        let html = false
 
         for (let i = 0; i < this.touches.length; i++) {
             const ti = this.touches[i]
@@ -675,20 +672,19 @@ class MGM {
     _loop() {
         if (!this.RUN) return
         if (!this.tabActive) return
+        
 
         if (this.params.log) this._consDiv.innerHTML = ''
+        if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        if (this.sch100 == 100) this.sch100 = 0
 
         this._touchLoop()
-
-        if (!this.params.noClear) this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-
         this._loopUpdate()
         this._loopDraw()
 
-        for (let j in this.press) this.press[j] = false
+
         this.frame++
         this._fpsSch++
-
         if (this.params.log) {
             this._logs = this._logs.splice(-300)
             this._consDiv.innerHTML = '> ' + this._logs.join('<br>> ')
@@ -696,6 +692,8 @@ class MGM {
                 + '<br><br>objs: ' + this.objects.length + ', nocons: ' + this.noconts.length
             this._consDiv.scrollTop = 10000
         }
+
+        this.sch100++
 
     }
 
@@ -709,9 +707,9 @@ class MGM {
             else if (obj.active === false) ok = false
             else if (obj._toDel === false) ok = false
 
-            if (obj._goStart === true) {
+            if (obj._noDrawS === true) {
                 ok = false
-                delete obj._goStart
+                delete obj._noDrawS
             }
 
             if (ok)
@@ -735,9 +733,9 @@ class MGM {
             else if (obj.active === false) ok = false
             else if (obj._toDel === false) ok = false
 
-            if (obj._goStart === true) {
+            if (obj._noDrawS === true) {
                 ok = false
-                delete obj._goStart
+                delete obj._noDrawS
             }
 
             if (ok)
@@ -1228,7 +1226,6 @@ class MGMObject {
 
         this.collider._px = this.collider.px * this._width
         this.collider._py = this.collider.py * this._height
-
     }
 
 
@@ -1247,9 +1244,14 @@ class MGMObject {
             if (this.start) this.start(this)
             this._setZLayer()
             this._animaWork(true)
+            delete this._goStart
+            this._noDrawS = true
         } else {
-            if (this.update && this.active)
+            if (this.update && this.active) 
                 this.update(this)
+            
+            if (this.update100 && this._mgm.sch100 == 0)
+                this.update100(this)
 
             this._work()
             this._waitsWork()
@@ -1748,8 +1750,9 @@ class MGMObject {
     }
 
 
-    delete() {
+    delete(act = false) {
         this._toDel = true
+        if (act) this.active = false
     }
 
 
