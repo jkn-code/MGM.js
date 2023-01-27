@@ -2226,7 +2226,7 @@ class MGMObject {
         return vol
     }
 
-    seVol(v) {
+    setVol(v) {
         return v * this._mgm.volume
     }
 }
