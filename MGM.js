@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.26');
+console.log('MGM.js 1.27');
 
 class MGM {
     constructor(params) {
@@ -29,6 +29,10 @@ class MGM {
         if (this.params.fontRatio === undefined) this.params.fontRatio = 1
         this.params.ratio = this.params.ratio || 1
         if (this.params.ratio == 'auto') this.params.ratio = innerWidth / innerHeight
+        if (this.params.volume === undefined) this.volume = 1
+        else this.volume = this.params.volume
+        if (this.params.volDist === undefined) this.volDist = 700
+        else this.volDist = this.params.volDist
 
         this._initHTML()
         this._initCanvasPlane()
@@ -499,21 +503,25 @@ class MGM {
 
 
     _loadSound(prm) {
-        let src = prm
-        if (typeof prm == 'object') src = prm.src
-
-        this._build.resAll++
-
         const sound = new Audio()
-        sound.src = src
+        let src = prm
 
-        if (prm.volume !== undefined) sound.volume = prm.volume
+        if (typeof prm == 'object') sound.src = prm.src
+        else sound.src = prm
         if (prm.loop !== undefined) sound.loop = prm.loop
         if (prm.onended !== undefined) sound.onended = prm.onended
-
+        if (prm.vol !== undefined) {
+            sound.vol = prm.vol
+            sound.volume = prm.vol
+        } else sound.vol = 1
+        if (prm.volume !== undefined) sound.volume = prm.volume
+        else sound.volume = 1
+        
+        this._build.resAll++
         sound.onloadstart = () => {
             this._build.resLoad++
         }
+
         sound._actPause = false
         sound._setActPause = (paused, snd) => {
             if (paused) {
@@ -1084,6 +1092,12 @@ class MGM {
         this._logPrms[n] = v
     }
 
+    lim(v, min = 0, max = 1) {
+        if (v < min) v = min
+        if (v > max) v = max
+        return v
+    }
+
 
 
 
@@ -1151,6 +1165,7 @@ class MGMObject {
                     this[j][s]._setRunPause = v[s]._setRunPause
                     this[j][s].volume = v[s].volume
                     this[j][s].loop = v[s].loop
+                    this[j][s].vol = v[s].vol
                 }
             } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
@@ -1291,7 +1306,7 @@ class MGMObject {
                 if (this.update100 && this._mgm.sch100 == 0) this.update100(this)
                 if (this.update1000 && this._mgm.sch1000 == 0) this.update1000(this)
             }
-            
+
             this._waitsWork()
             this._work()
         }
@@ -1347,14 +1362,15 @@ class MGMObject {
             if (this.angle > 0 && this.angle < 90) this.flipYV = 1
             else this.flipYV = -1
 
-        this._oldScope = {
-            x: this.x,
-            y: this.y,
-            picName: this.picName,
-            size: this.size,
-            width: this.width,
-            height: this.height,
-        }
+        if (this._scope)
+            this._oldScope = {
+                x: this.x,
+                y: this.y,
+                picName: this.picName,
+                size: this.size,
+                width: this.width,
+                height: this.height,
+            }
     }
 
 
@@ -1614,26 +1630,26 @@ class MGMObject {
         this._mgm.context.scale(this.flipXV, this.flipYV)
         if (this.effect) this._mgm.context.filter = this.effect
 
+
         if (this._image && !this._image.pic)
             this._mgm.context.drawImage(this._image,
                 -this._width / 2,
                 -this._height / 2,
                 this._width,
                 this._height)
-        else
-            if (this._image && this._image.pic) {
-                this._mgm.context.drawImage(this._image._pic,
-                    this._image.x,
-                    this._image.y,
-                    this._image.width,
-                    this._image.height,
-                    -this._width / 2,
-                    -this._height / 2,
-                    this._width,
-                    this._height)
-            }
+        else if (this._image && this._image.pic)
+            this._mgm.context.drawImage(this._image._pic,
+                this._image.x,
+                this._image.y,
+                this._image.width,
+                this._image.height,
+                -this._width / 2,
+                -this._height / 2,
+                this._width,
+                this._height)
 
         this._drawPrimitives(1)
+
         this._mgm.context.restore()
 
         if (this.border) this._boardsShow(this.border)
@@ -2079,7 +2095,7 @@ class MGMObject {
     }
 
 
-    limit(n, min, max) {
+    lim(n, min, max) {
         if (this[n] < min) this[n] = min
         if (this[n] > max) this[n] = max
     }
@@ -2175,6 +2191,44 @@ class MGMObject {
         if (this.onGround) this.gravVel = v
     }
 
+    soundPV(name, obj) {
+        return this._soundPlayVol(name, obj, 1)
+    }
+
+    soundSV(name, obj) {
+        return this._soundPlayVol(name, obj, 2)
+    }
+
+    _soundPlayVol(name, obj, ps) {
+        if (!obj) obj = this._mgm.camera
+
+        let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
+        vol *= this._mgm.volume * this.sounds[name].vol
+        if (vol > 0) {
+            if (vol > 1) vol = 1
+            this.sounds[name].volume = vol
+
+            if (ps == 1) this.sounds[name].play()
+            if (ps == 2) this.sounds[name].start()
+
+            return vol
+        }
+    }
+
+    setVolDist(v, obj) {
+        if (!obj) obj = this._mgm.camera
+
+        let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
+        vol *= this._mgm.volume * this.sounds[name].vol
+        if (vol < 0) vol = 0
+        if (vol > 1) vol = 1
+
+        return vol
+    }
+
+    seVol(v) {
+        return v * this._mgm.volume
+    }
 }
 
 
