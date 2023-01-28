@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.27');
+console.log('MGM.js 1.28');
 
 class MGM {
     constructor(params) {
@@ -35,7 +35,7 @@ class MGM {
         else this.volDist = this.params.volDist
 
         this._initHTML()
-        this._initCanvasPlane()
+        this._initCanvas()
         this._initMobileControl()
         this._initMouse()
         this._initKeys()
@@ -142,8 +142,6 @@ class MGM {
             document.title = this.params.name
         }
 
-
-
         this.curtain = document.getElementById('mgmCurtain')
         if (!this.curtain) {
             this.curtain = document.createElement('div')
@@ -172,7 +170,7 @@ class MGM {
     }
 
 
-    _initCanvasPlane() {
+    _initCanvas() {
         this.canvas = document.createElement('canvas')
         this.canvas.classList.add('mgm-canvas')
         this.canvas.style.cssText = `
@@ -198,10 +196,7 @@ class MGM {
         if (this.params.canvasFilter)
             this.canvas.style.filter = this.params.canvasFilter
 
-
-
         this.resizeWin()
-
     }
 
 
@@ -376,7 +371,6 @@ class MGM {
 
 
     _loadResources() {
-
         this._build.resAll = 0
         this._build.resLoad = 0
 
@@ -446,7 +440,6 @@ class MGM {
                 this._reload(url)
             }
         }, 0)
-
     }
 
     _reload(url) {
@@ -485,10 +478,7 @@ class MGM {
         this.noconts = []
         this.camera = { x: 0, y: 0 }
         if (reObj) this._initObjs()
-
     }
-
-
 
 
     _loadPic(src) {
@@ -600,8 +590,8 @@ class MGM {
             let w = parseFloat(el.getAttribute('mgm-width'))
             let h = parseFloat(el.getAttribute('mgm-height'))
 
-            if (w != NaN) el.style.width = (w * kh) + 'px'
-            if (h != NaN) el.style.height = (h * kh) + 'px'
+            if (!isNaN(w)) el.style.width = (w * kh) + 'px'
+            if (!isNaN(h)) el.style.height = (h * kh) + 'px'
             if (isNaN(x) && isNaN(right) && isNaN(left)) left = 0
             if (isNaN(y) && isNaN(bottom) && isNaN(top)) top = 0
 
@@ -618,12 +608,7 @@ class MGM {
                 el.style.padding = (el.mgmPadding * kh) + 'px'
             }
         })
-
-
-
     }
-
-
 
 
     _firstV(m) {
@@ -637,8 +622,6 @@ class MGM {
 
 
     _initObjs() {
-        this.context.font = '20px Tahoma'
-
         for (const j in this.object)
             this.object[j] = this.clone({
                 name: j,
@@ -681,9 +664,6 @@ class MGM {
     }
 
 
-
-
-
     _loop() {
         if (!this.RUN) return
         if (!this.tabActive) return
@@ -723,6 +703,7 @@ class MGM {
         this.sch1000++
 
     }
+
 
     _loopDraw() {
         const mas = []
@@ -791,8 +772,9 @@ class MGM {
         for (const z of this.zList)
             for (const obj of mas)
                 if (obj.z == z)
-                    obj._draw()
+                    obj._draw() 
     }
+
 
     _loopUpdate() {
         let i = 0
@@ -817,6 +799,7 @@ class MGM {
             i++
         }
     }
+
 
     _soundsPause(paused, tip) {
         if (!this.objects && !this.noconts) return
@@ -844,11 +827,13 @@ class MGM {
         }
     }
 
+
     _orderY(a, b) {
         if (a.y < b.y) return 1;
         if (a.y > b.y) return -1;
         return 0;
     }
+
 
     _toggleFullScreen() {
         var doc = window.document;
@@ -877,13 +862,12 @@ class MGM {
         }
     }
 
+
     _objInArr(obj, arr) {
         for (const a of arr)
             if (a.objectId === obj.objectId)
                 return true
     }
-
-
 
 
     loadScript(url) {
@@ -892,21 +876,18 @@ class MGM {
         document.head.appendChild(s)
         s.src = url
         s.onload = () => console.log('load: ' + url)
-
     }
 
 
     pause() {
         this.RUN = false
         this._soundsPause(true, 'run')
-
     }
 
 
     run() {
         this.RUN = true
-        this._soundsPause(false, 'run')
-
+        this._soundsPause(false, 'run')        
     }
 
 
@@ -919,14 +900,12 @@ class MGM {
             this.curtain.style.display = 'flex'
         }
         clearInterval(this._loopItv)
-        this._soundsPause(true, 'run')
-
+        this._soundsPause(true, 'run')        
     }
 
 
     restart(url = '') {
-        location.href = url
-
+        location.href = url        
     }
 
 
@@ -935,8 +914,7 @@ class MGM {
             .reduce(function (s, c) {
                 var t = c.split('=');
                 s[t[0]] = t[1]; return s;
-            }, {});
-
+            }, {});        
     }
 
 
@@ -963,7 +941,6 @@ class MGM {
             if (Math.random() >= 0.5) return true
             else return false
         }
-
     }
 
 
@@ -971,8 +948,7 @@ class MGM {
         let angle = Math.atan2(x2 - x1, y2 - y1) * 180 / Math.PI
         if (angle > 180) angle -= 360
         if (angle < -180) angle += 360
-        return angle
-
+        return angle        
     }
 
 
@@ -980,14 +956,12 @@ class MGM {
         if (!obj1 || !obj2) return
         if (obj1.active === false) return
         if (obj2.active === false) return
-        return this.angleXY(obj1.x, obj1.y, obj2.x, obj2.y)
-
+        return this.angleXY(obj1.x, obj1.y, obj2.x, obj2.y)        
     }
 
 
     distanceXY(x1, y1, x2, y2) {
-        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
-
+        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))        
     }
 
 
@@ -995,24 +969,21 @@ class MGM {
         if (!obj1 || !obj2) return
         if (obj1.active === false) return
         if (obj2.active === false) return
-        return this.distanceXY(obj1.x, obj1.y, obj2.x, obj2.y)
-
+        return this.distanceXY(obj1.x, obj1.y, obj2.x, obj2.y)        
     }
 
 
     clone(prm) {
         prm._mgm = this
         const obj = new MGMObject(prm)
-        return obj
-
+        return obj        
     }
 
 
     getObj(prm, key = 'name') {
         for (const obj of this.objects)
             if (obj.active !== false && obj[key] == prm)
-                return obj
-
+                return obj        
     }
 
 
@@ -1029,8 +1000,7 @@ class MGM {
                 if (obj.active !== false)
                     ot.push(obj)
 
-        return ot
-
+        return ot        
     }
 
 
@@ -1039,8 +1009,7 @@ class MGM {
         return {
             x: dist * Math.sin(rad),
             y: dist * Math.cos(rad)
-        }
-
+        }        
     }
 
 
@@ -1078,14 +1047,12 @@ class MGM {
 
 
     round(n, t) {
-        return Math.round(n * t) / t
-
+        return Math.round(n * t) / t        
     }
 
 
     log(s) {
-        this._logs.push(s)
-
+        this._logs.push(s)        
     }
 
     logPrm(n, v) {
@@ -1097,9 +1064,6 @@ class MGM {
         if (v > max) v = max
         return v
     }
-
-
-
 
 
 
@@ -1260,6 +1224,7 @@ class MGMObject {
                 this.picName = this._mgm._firstJ(this.pic)
 
         this._wait = {}
+        this._pressClick = true
         this._scope = true
 
         this._setScope()
@@ -2111,16 +2076,16 @@ class MGMObject {
 
     click() {
         if (this._mgm.mouse && this._mgm.mouse.down) {
-            if (this._pressK) {
-                this._pressK = false
-                setTimeout(() => this._pressK = true, 100)
+            if (this._pressClick) {
+                this._pressClick = false
+                setTimeout(() => this._pressClick = true, 100)
                 return this.contactXY(this._mgm.mouse.x, this._mgm.mouse.y)
             }
         }
         if (this._mgm.touch && this._mgm.touch.down) {
-            if (this._pressK) {
-                this._pressK = false
-                setTimeout(() => this._pressK = true, 100)
+            if (this._pressClick) {
+                this._pressClick = false
+                setTimeout(() => this._pressClick = true, 100)
                 return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
             }
         }
