@@ -157,7 +157,6 @@ class MGM {
             width: 100%; 
             background: ` + document.body.style.backgroundColor + `; 
             z-index: 9999; 
-            cursor: pointer;
             display: flex; 
             align-items: center; 
             justify-content: center;`
@@ -1383,87 +1382,6 @@ class MGMObject {
             let cont = false
 
             if (this.objectId == obj.objectId) ok = false
-            else if (this.physics == 'unit' && obj.physics == 'unit') ok = false
-            else if (this.physics == 'unit2' && obj.physics == 'unit') ok = false
-
-            if (ok &&
-                this.collider.right > obj.collider.left &&
-                this.collider.left < obj.collider.right &&
-                this.collider.top > obj.collider.bottom &&
-                this.collider.bottom < obj.collider.top
-            ) cont = true
-
-            if (ok && cont) {
-                let vxRight = obj.collider.left - this.collider.right
-                let vxLeft = obj.collider.right - this.collider.left
-                let vyTop = obj.collider.bottom - this.collider.top
-                let vyBottom = obj.collider.top - this.collider.bottom
-                if (Math.abs(vxRight) < Math.abs(vxLeft)) vxLeft = 0
-                else vxRight = 0
-                if (Math.abs(vyTop) < Math.abs(vyBottom)) vyBottom = 0
-                else vyTop = 0
-                let backX = vxRight + vxLeft
-                let backY = vyTop + vyBottom
-                if (Math.abs(backX) < Math.abs(backY)) backY = 0
-                else backX = 0
-                backs.push([backX, backY])
-            }
-        }
-
-        let nxR = 0, nxL = 0, nyT = 0, nyB = 0
-
-        for (const m of backs) {
-            if (m[0] < nxR) nxR = m[0]
-            if (m[0] > nxL) nxL = m[0]
-            if (m[1] < nyT) nyT = m[1]
-            if (m[1] > nyB) nyB = m[1]
-        }
-
-        const nx = this.x + nxL + nxR
-        const ny = this.y + nyT + nyB
-
-        if (nx != this.x || ny != this.y) {
-            this.x += nxL + nxR
-            this.y += nyT + nyB
-            this._setCollider()
-        }
-
-        if (this.mass != 0)
-            for (const obj of this._mgm.objects)
-                if (obj.active && this.objectId != obj.objectId)
-                    if (obj.physics == 'wall' || obj.physics == 'unit2')
-                        if (this.collider.right - 5 > obj.collider.left &&
-                            this.collider.left + 5 < obj.collider.right) {
-                            if (this.collider.top > obj.collider.bottom &&
-                                this.collider.bottom - 1 < obj.collider.top) {
-                                this.onGround = true
-                                this.gravVel = 0
-                            }
-                            if (this.collider.top + 1 > obj.collider.bottom &&
-                                this.collider.bottom < obj.collider.top) {
-                                this.gravVel = 0
-                            }
-                        }
-    }
-
-
-    _physicWork000() {
-        if (!this.physics) return
-        if (this.active === false) return
-        if (this.hidden) return
-        if (this.physics == 'wall') return
-
-        this.onGround = false
-        let backs = []
-
-        for (const obj of this._mgm.objects) {
-            let ok = true
-            let cont = false
-
-            if (obj.active === false) ok = false
-            else if (this.objectId == obj.objectId) ok = false
-            else if (!obj.physics) ok = false
-            else if (obj.hidden) ok = false
             else if (this.physics == 'unit' && obj.physics == 'unit') ok = false
             else if (this.physics == 'unit2' && obj.physics == 'unit') ok = false
 
