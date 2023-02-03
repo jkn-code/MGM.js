@@ -80,16 +80,15 @@ ____
             th.physics = 'wall'
         },
         start: th => {
-            if (!th.isClone) {
-                for (let i = 0; i < 50; i++)
-                    th.clone({
-                        x: Mgm.random(-1000, 1000),
-                        y: Mgm.random(-1000, 1000),
-                    })
-            } else {
-                th.picName = 't'+ Mgm.random(1, 3)
-            }
+            for (let i = 0; i < 50; i++)
+                th.clone({
+                    x: Mgm.random(-1000, 1000),
+                    y: Mgm.random(-1000, 1000),
+                })
         },
+        stClone: th => {
+            th.picName = 't'+ Mgm.random(1, 3)
+        }
     }
 </script>
 ```
