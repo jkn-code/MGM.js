@@ -35,14 +35,14 @@ ____
     })
 
     Mgm.object['unit'] = {
-        init: th => {
-            th.drawCircle = {
+        init: function() {
+            this.drawCircle = {
                 radius: 30,
                 fillColor: 'green',
             }
         },
-        update: th => {
-            th.wasd(5)
+        update: function() {
+            this.wasd(5)
         },
     }
 </script>
@@ -59,12 +59,12 @@ ____
 
     Mgm.object['unit'] = {
         pic: { p1: 'img/player.png', }
-        init: th => {
-            th.size = 0.2
-            th.physics = 'unit'
+        init: function() {
+            this.size = 0.2
+            this.physics = 'unit'
         },
-        update: th => {
-            th.arrows(5)
+        update: function() {
+            this.arrows(5)
         },
     }
 
@@ -74,20 +74,20 @@ ____
             t2: 'img/tree2.png',
             t3: 'img/tree3.png',
         },
-        init: th => {
-            th.active = false
-            th.size = 0.5
-            th.physics = 'wall'
+        init: function() {
+            this.active = false
+            this.size = 0.5
+            this.physics = 'wall'
         },
-        start: th => {
+        start: function() {
             for (let i = 0; i < 50; i++)
-                th.clone({
+                this.clone({
                     x: Mgm.random(-1000, 1000),
                     y: Mgm.random(-1000, 1000),
                 })
         },
-        stClone: th => {
-            th.picName = 't'+ Mgm.random(1, 3)
+        stClone: function() {
+            this.picName = 't'+ Mgm.random(1, 3)
         }
     }
 </script>
