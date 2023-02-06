@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.30');
+console.log('MGM.js 1.31');
 
 
 
@@ -43,6 +43,8 @@ class MGM {
         else this.volume = this.params.volume
         if (this.params.volDist === undefined) this.volDist = 700
         else this.volDist = this.params.volDist
+        if (this.params.scene === undefined) this.scene = ''
+        else this.scene = this.params.scene
 
         this.#initHTML()
         this.#initCanvas()
@@ -181,6 +183,15 @@ class MGM {
         if (this.params.startStyle)
             this.curtainIn.style.cssText += this.params.startStyle
         this.curtainIn.innerHTML = 'Loading'
+    }
+
+
+    set canvasColor(col) {
+        this.canvas.style.backgroundColor = col
+    }
+
+    set bodyColor(col) {
+        document.body.style.backgroundColor = col
     }
 
 
@@ -464,46 +475,13 @@ class MGM {
     }
 
 
-    reload(url) {
-        if (!url || url.trim() == '') return
-        let w = setInterval(() => {
-            if (this.#build.isLoad) {
-                clearInterval(w)
-                this._reload(url)
-            }
-        }, 0)
-    }
 
 
-    _reload(url) {
-        console.log('reload');
-        this.stop()
 
-        this.object = {}
-        this.clearGame(false)
 
-        let urls = []
-        let scrAll = 0
-        let scrLoad = 0
 
-        if (!Array.isArray(url)) urls[0] = url
-        else urls = url
 
-        urls.forEach(u => {
-            scrAll++
-            const s = document.createElement('script')
-            document.head.appendChild(s)
-            s.src = u + '?' + this.random(111, 999)
-            s.onload = () => scrLoad++
-        })
 
-        let w = setInterval(() => {
-            if (scrAll == scrLoad) {
-                clearInterval(w)
-                this.#loadResources()
-            }
-        }, 0)
-    }
 
 
     clearGame(reObj = true) {
@@ -512,6 +490,12 @@ class MGM {
         this.zList = []
         this.camera = { x: 0, y: 0 }
         if (reObj) this.#initObjs()
+    }
+
+
+    setScene(name) {
+        this.scene = name
+        this.clearGame()
     }
 
 
@@ -637,6 +621,7 @@ class MGM {
             if (!isNaN(bottom)) el.style.top = (cpos.bottom - bottom * kh - elPos.height) + 'px'
             if (!isNaN(x)) el.style.left = (cpos.left + this.canvCX * kh + x * kh) + 'px'
             if (!isNaN(y)) el.style.top = (cpos.top + this.canvCY * kh - y * kh) + 'px'
+
             if (el.style.padding != '') {
                 if (!el.mgmPadding) el.mgmPadding = parseInt(el.style.padding.replace('px', ''))
                 el.style.padding = (el.mgmPadding * kh) + 'px'
@@ -1172,6 +1157,9 @@ class MGMObject {
 
         if (params.isClone) this.isClone = true
 
+        if (obj.scene === undefined) this.scene = ''
+        else this.scene = obj.scene
+
         if (!obj.nocont && params._mgm.objects.length > 10000) return
         if (obj.nocont && params._mgm.noconts.length > 10000) return
 
@@ -1179,7 +1167,7 @@ class MGMObject {
             const v = obj[j]
             if (j == 'pic' || j == '_pics' || j == 'picName' ||
                 j == 'anim' || j == '_animName' ||
-                j == 'name' || j == '_mgm' || j == '_obj111' ||
+                j == 'name' || j == '_mgm' ||
                 j == 'obj' ||
                 typeof v == 'function') this[j] = v
             else if (j == 'sounds') {
@@ -1229,15 +1217,14 @@ class MGMObject {
 
         if (!this.isClone && this.init) this.init(this)
 
-        if (!this.isClone) this.name = obj.name
-        else for (const j in params)
-            if (j != '_object')
-                this[j] = params[j]
+        if (this.isClone) for (const j in params) this[j] = params[j]
 
         this._goStart = true
 
 
         this._init()
+
+        if (this.scene != params._mgm.scene) return
 
         if (!this.nocont) this._mgm.objects.push(this)
         else this._mgm.noconts.push(this)
@@ -1848,7 +1835,7 @@ class MGMObject {
     moveTo(obj, speed) {
         let obj2 = obj
         if (typeof obj == 'string') obj2 = this._mgm.getObj(obj)
-        if (this.x == obj.x && this.y == obj.y) return
+        if (this.x == obj.x && this.y == obj.y) return true
         const d = this.distanceTo(obj2)
         if (d >= speed) {
             this.angle = this.angleTo(obj)
