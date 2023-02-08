@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.31');
+console.log('MGM.js 1.32');
 
 
 
@@ -145,6 +145,7 @@ class MGM {
             background-color: #fffa;
             word-wrap: break-word;
             pointer-events: none;
+            border-radius: 0 0 5px 0;
         `
         document.body.appendChild(this._consDiv)
 
@@ -221,7 +222,6 @@ class MGM {
         if (this.params.canvasFilter)
             this.canvas.style.filter = this.params.canvasFilter
 
-        this.resizeWin()
     }
 
     #touchBtns = []
@@ -494,6 +494,7 @@ class MGM {
 
 
     setScene(name) {
+        this.#soundsPause(true, 'run')
         this.scene = name
         this.clearGame()
     }
@@ -562,10 +563,15 @@ class MGM {
             sound.pause()
             sound.currentTime = 0
         }
+        const mgm = this
         sound.start = function () {
             this.pause()
             this.currentTime = 0
             this.play()
+        }
+        sound._play = sound.play
+        sound.play = function () {
+            this._play()
         }
 
         return sound
@@ -948,11 +954,10 @@ class MGM {
         console.log('stop');
         this.RUN = false
         this.STOP = true
+        this.inRunPause = true
         if (txt || this.params.stopText) {
             this.curtainIn.innerHTML = txt || this.params.stopText
-            this.curtain.style.display = 'flex'
         }
-        clearInterval(this._loopItv)
         this.#soundsPause(true, 'run')
     }
 
@@ -1032,6 +1037,16 @@ class MGM {
         const obj = new MGMObject(prm)
         return obj
     }
+
+
+    cloneNew(prm) {
+        prm._mgm = this
+        prm.isClone = true
+        prm._new = true
+        const obj = new MGMObject(prm)
+        return obj
+    }
+
 
 
     getObj(prm, key = 'name') {
@@ -1120,6 +1135,47 @@ class MGM {
     }
 
 
+    htmlWin(t, id, fn) {
+        let el = document.getElementById(id)
+
+        if (t == 'hide') {
+            el.style.display = 'none'
+            el.style.opacity = 0
+        }
+        if (t == 'show') {
+            el.style.display = 'block'
+            el.style.opacity = 1
+        }
+        if (t == 'fadeOut') {
+            let op = 1
+            let ai = setInterval(() => {
+                el.style.opacity = op
+                op -= 0.1
+                if (op < 0.1) {
+                    el.style.opacity = 0
+                    el.style.display = 'none'
+                    clearInterval(ai)
+                    if (fn) fn()
+                }
+            }, 30)
+        }
+        if (t == 'fadeIn') {
+            let op = 0
+            el.style.display = 'block'
+            let ai = setInterval(() => {
+                el.style.opacity = op
+                op += 0.1
+                if (op > 0.9) {
+                    el.style.opacity = 1
+                    clearInterval(ai)
+                    if (fn) fn()
+                }
+            }, 30)
+        }
+    }
+
+
+
 
 
 
@@ -1152,8 +1208,14 @@ class MGMObject {
         let obj
         if (params.name) {
             obj = params._mgm.object[params.name]
-            if (!obj) obj = params
-        } else obj = params
+        }
+
+        if (!obj)
+            if (params._new) obj = params
+            else {
+                console.log('ERROR - no original object:', params.name);
+                return
+            }
 
         if (params.isClone) this.isClone = true
 
@@ -1181,6 +1243,8 @@ class MGMObject {
                     this[j][s].volume = v[s].volume
                     this[j][s].loop = v[s].loop
                     this[j][s].vol = v[s].vol
+                    this[j][s].play = v[s].play
+                    this[j][s]._play = v[s]._play
                 }
             } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
