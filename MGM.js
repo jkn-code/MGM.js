@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.32');
+console.log('MGM.js 1.33');
 
 
 
@@ -9,7 +9,6 @@ class MGM {
     #fpsTime = 0
     #logPrms = {}
     #build = {}
-    #indrlength = 0
     #fpsSch = 0
     #logs = []
 
@@ -59,6 +58,7 @@ class MGM {
             this.params.borders = this.params.borders.split(',')
             if (this.params.borders[0]) this.params.borders[0] = this.params.borders[0].trim()
             if (this.params.borders[1]) this.params.borders[1] = this.params.borders[1].trim()
+            if (this.params.borders[2]) this.params.borders[2] = this.params.borders[2].trim()
         }
 
 
@@ -517,14 +517,17 @@ class MGM {
 
         if (typeof prm == 'object') sound.src = prm.src
         else sound.src = prm
-        if (prm.loop !== undefined) sound.loop = prm.loop
+
         if (prm.onended !== undefined) sound.onended = prm.onended
-        if (prm.vol !== undefined) {
-            sound.vol = prm.vol
-            sound.volume = prm.vol
-        } else sound.vol = 1
-        if (prm.volume !== undefined) sound.volume = prm.volume
-        else sound.volume = 1
+
+        if (prm.volume !== undefined) {
+            sound.vol = prm.volume
+            sound.volume = prm.volume
+        } else {
+            sound.vol = 1
+            sound.volume = 1
+        }
+
 
         this.#build.resAll++
         sound.onloadstart = () => {
@@ -558,20 +561,6 @@ class MGM {
                     snd._runPause = false
                 }
             }
-        }
-        sound.stop = () => {
-            sound.pause()
-            sound.currentTime = 0
-        }
-        const mgm = this
-        sound.start = function () {
-            this.pause()
-            this.currentTime = 0
-            this.play()
-        }
-        sound._play = sound.play
-        sound.play = function () {
-            this._play()
         }
 
         return sound
@@ -633,6 +622,8 @@ class MGM {
                 el.style.padding = (el.mgmPadding * kh) + 'px'
             }
         })
+
+        if (this.objectsId > 0) this.#loopDraw()
     }
 
 
@@ -772,7 +763,7 @@ class MGM {
 
         const mas = []
         const gr = 0
-        this.#indrlength = 0
+        this.indraws = 0
         this._physMas = []
 
         for (const obj of this.objects) {
@@ -797,7 +788,7 @@ class MGM {
             if (ok && draw) {
                 mas.push(obj)
                 obj._drawing = true
-                this.#indrlength++
+                this.indraws++
             } else obj._drawing = false
 
             if (ok && obj.physics) this._physMas.push(obj)
@@ -825,7 +816,7 @@ class MGM {
             if (ok && draw) {
                 mas.push(obj)
                 obj._drawing = true
-                this.#indrlength++
+                this.indraws++
             } else obj._drawing = false
         }
 
@@ -851,7 +842,7 @@ class MGM {
             + prms
             + '<hr>fps: ' + this.fps + ', frame: ' + this.frame
             + '<br>objs: ' + this.objects.length + ', nocons: ' + this.noconts.length
-            + '<br>indraw: ' + this.#indrlength
+            + '<br>indraw: ' + this.indraws
 
         this._consDiv.scrollTop = 10000
     }
@@ -1139,12 +1130,12 @@ class MGM {
         let el = document.getElementById(id)
 
         if (t == 'hide') {
-            el.style.display = 'none'
             el.style.opacity = 0
+            el.style.pointerEvents = 'none'
         }
         if (t == 'show') {
-            el.style.display = 'block'
             el.style.opacity = 1
+            el.style.pointerEvents = 'all'
         }
         if (t == 'fadeOut') {
             let op = 1
@@ -1153,7 +1144,7 @@ class MGM {
                 op -= 0.1
                 if (op < 0.1) {
                     el.style.opacity = 0
-                    el.style.display = 'none'
+                    el.style.pointerEvents = 'none'
                     clearInterval(ai)
                     if (fn) fn()
                 }
@@ -1162,6 +1153,7 @@ class MGM {
         if (t == 'fadeIn') {
             let op = 0
             el.style.display = 'block'
+            el.style.pointerEvents = 'all'
             let ai = setInterval(() => {
                 el.style.opacity = op
                 op += 0.1
@@ -1236,15 +1228,11 @@ class MGMObject {
                 this[j] = {}
                 for (const s in v) {
                     this[j][s] = v[s].cloneNode()
-                    this[j][s].start = v[s].start
-                    this[j][s].stop = v[s].stop
                     this[j][s]._setActPause = v[s]._setActPause
                     this[j][s]._setRunPause = v[s]._setRunPause
                     this[j][s].volume = v[s].volume
-                    this[j][s].loop = v[s].loop
                     this[j][s].vol = v[s].vol
-                    this[j][s].play = v[s].play
-                    this[j][s]._play = v[s]._play
+                    this[j][s].loop = v[s].loop
                 }
             } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
@@ -1689,6 +1677,9 @@ class MGMObject {
             this._mgm.context.lineTo(left, top)
             this._mgm.context.stroke()
         }
+        if (border[2] && border[2] == 'name') {
+            this._mgm.context.fillText(this.name, left, bottom)
+        }
     }
 
 
@@ -2115,14 +2106,14 @@ class MGMObject {
         if (!this._mgm.isMobile && this._mgm.mouse.down) {
             if (this._pressClick) {
                 this._pressClick = false
-                setTimeout(() => this._pressClick = true, 100)
+                setTimeout(() => this._pressClick = true, 300)
                 return this.contactXY(this._mgm.mouse.x, this._mgm.mouse.y)
             }
         }
         if (this._mgm.isMobile && this._mgm.touch.down) {
             if (this._pressClick) {
                 this._pressClick = false
-                setTimeout(() => this._pressClick = true, 100)
+                setTimeout(() => this._pressClick = true, 300)
                 return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
             }
         }
@@ -2193,44 +2184,47 @@ class MGMObject {
         if (this.onGround) this.gravVel = v
     }
 
-    soundPV(name, obj) {
-        return this._soundPlayVol(name, obj, 1)
-    }
 
-    soundSV(name, obj) {
-        return this._soundPlayVol(name, obj, 2)
-    }
 
-    _soundPlayVol(name, obj, ps) {
-        if (!obj) obj = this._mgm.camera
 
-        let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
-        vol *= this._mgm.volume * this.sounds[name].vol
-        if (vol > 0) {
-            if (vol > 1) vol = 1
-            this.sounds[name].volume = vol
+    sound(d, name, obj) {
+        const sound = this.sounds[name]
+        if (obj) {
+            if (obj === true) obj = this._mgm.camera
+            let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
+            vol *= this._mgm.volume * sound.vol
+            sound.volume = vol
+        }
 
-            if (ps == 1) this.sounds[name].play()
-            if (ps == 2) this.sounds[name].start()
-
-            return vol
+        if (d == 'play') {
+            if (!obj) sound.volume = this._mgm.volume * sound.vol
+            sound.play()
+        }
+        if (d == 'start') {
+            if (!obj) sound.volume = this._mgm.volume * sound.vol
+            sound.currentTime = 0
+            sound.play()
+        }
+        if (d == 'loop') {
+            sound.loop = true
+            sound.currentTime = 0
+            sound.play()
+        }
+        if (d == 'stop') {
+            sound.pause()
+            sound.currentTime = 0
+            sound.loop = false
+        }
+        if (d == 'pause') {
+            sound.pause()
         }
     }
 
-    setVolDist(v, obj) {
-        if (!obj) obj = this._mgm.camera
-
-        let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
-        vol *= this._mgm.volume * this.sounds[name].vol
-        if (vol < 0) vol = 0
-        if (vol > 1) vol = 1
-
-        return vol
+    setVol(name, vol) {
+        this.sounds[name].vol = vol
+        this.sounds[name].volume = this._mgm.volume * this.sounds[name].vol
     }
 
-    setVol(v) {
-        return v * this._mgm.volume
-    }
 }
 
 
