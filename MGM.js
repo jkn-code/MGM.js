@@ -2193,6 +2193,8 @@ class MGMObject {
             if (obj === true) obj = this._mgm.camera
             let vol = 1 + this.distanceTo(obj) / -this._mgm.volDist
             vol *= this._mgm.volume * sound.vol
+            if (vol < 0) vol = 0
+            if (vol > 1) vol = 1
             sound.volume = vol
         }
 
