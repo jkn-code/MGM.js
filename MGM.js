@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.33');
+console.log('MGM.js 1.34');
 
 
 
@@ -1030,7 +1030,7 @@ class MGM {
     }
 
 
-    cloneNew(prm) {
+    newClone(prm) {
         prm._mgm = this
         prm.isClone = true
         prm._new = true
@@ -1908,7 +1908,8 @@ class MGMObject {
 
 
     contactXY(x, y) {
-        if (x > this.collider.left &&
+        if (!this.hidden &&
+            x > this.collider.left &&
             x < this.collider.right &&
             y > this.collider.bottom &&
             y < this.collider.top) return true
