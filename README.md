@@ -58,7 +58,7 @@ ____
     })
 
     Mgm.object['unit'] = {
-        pic: { p1: 'img/player.png', }
+        pic: 'img/player.png', 
         init: function() {
             this.size = 0.2
             this.physics = 'unit'
@@ -69,7 +69,7 @@ ____
     }
 
     Mgm.object['tree'] = {
-        pic: {
+        pics: {
             t1: 'img/tree1.png',
             t2: 'img/tree2.png',
             t3: 'img/tree3.png',
