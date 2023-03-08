@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.35');
+console.log('MGM.js 1.36');
 
 
 
