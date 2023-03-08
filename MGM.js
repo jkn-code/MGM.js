@@ -2018,12 +2018,22 @@ class MGMObject {
 
 
     contactIn(prm, key = 'name') {
-        let ot = null
+        let ot, res
 
-        for (const obj of this._mgm.objects)
-            if (this.contactObjIn(obj))
-                if (obj[key] == prm) {
-                    ot = obj
+        if (prm)
+            for (const obj of this._mgm.objects)
+                if (obj.objectId != this.objectId &&
+                    (res = this.contactObjIn(obj)))
+                    if (obj[key] == prm) {
+                        ot = res
+                        break
+                    }
+
+        if (!prm)
+            for (const obj of this._mgm.objects)
+                if (obj.objectId != this.objectId &&
+                    (res = this.contactObjIn(obj))) {
+                    ot = res
                     break
                 }
 
@@ -2034,8 +2044,9 @@ class MGMObject {
     raycast(prm) {
         if (!prm) prm = {}
         if (!prm.angle) prm.angle = this.angle
-        if (!prm.steps) prm.steps = 40
         if (!prm.density) prm.density = 10
+        if (!prm.steps) prm.steps = 40
+        if (prm.distance) prm.steps = Math.round(prm.distance / prm.density)
 
         let x = this.x, y = this.y
         const rad = prm.angle * Math.PI / 180
@@ -2103,6 +2114,20 @@ class MGMObject {
     }
 
 
+    getStep(angle, dist) {
+        const coord = this._mgm.getStep(angle, dist)
+        return {
+            x: this.x + coord.x,
+            y: this.y + coord.y,
+        }
+    }
+
+
+    jump(v) {
+        if (this.onGround) this.gravVel = v
+    }
+
+
     lim(n, min, max) {
         if (this[n] < min) this[n] = min
         if (this[n] > max) this[n] = max
@@ -2140,6 +2165,7 @@ class MGMObject {
         if (this._mgm.isMobile && this._mgm.touch.down)
             return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
     }
+    
 
 
 
@@ -2185,21 +2211,6 @@ class MGMObject {
     }
 
 
-    getStep(angle, dist) {
-        const coord = this._mgm.getStep(angle, dist)
-        return {
-            x: this.x + coord.x,
-            y: this.y + coord.y,
-        }
-    }
-
-
-    jump(v) {
-        if (this.onGround) this.gravVel = v
-    }
-
-
-
 
     audio(d, name, obj) {
         if (!name) name = '_one'
@@ -2242,6 +2253,7 @@ class MGMObject {
             sound.pause()
         }
     }
+
 
     setVol(name, vol) {
         this.sounds[name].vol = vol
