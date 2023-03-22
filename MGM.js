@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.36');
+console.log('MGM.js 1.37');
 
 
 
@@ -225,6 +225,7 @@ class MGM {
     #touchSticks = []
     #touchSK = {}
     #initMobileControl() {
+        this.resizeWin()
         this.touch = {}
         this.touchS = {}
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -538,7 +539,6 @@ class MGM {
             sound.vol = 1
             sound.volume = 1
         }
-
 
         this.#build.resAll++
         sound.onloadstart = () => {
@@ -1246,6 +1246,7 @@ class MGMObject {
                     this[j][s].volume = v[s].volume
                     this[j][s].vol = v[s].vol
                     this[j][s].loop = v[s].loop
+                    this[j][s].onended = v[s].onended
                 }
             } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
@@ -1931,33 +1932,46 @@ class MGMObject {
     }
 
 
-    contactObj(obj) {
-        if (this.active && !this.hidden &&
+    #contactObj(obj, In) {
+        if (!In && 
+            this.active && !this.hidden &&
             obj.active && !obj.hidden &&
             this.collider.top + 1 > obj.collider.bottom &&
             this.collider.bottom - 1 < obj.collider.top &&
             this.collider.right + 1 > obj.collider.left &&
             this.collider.left - 1 < obj.collider.right
         ) return obj
-    }
 
+        if (In && 
+            this.active && !this.hidden &&
+            obj.active && !obj.hidden &&
+            this.collider.bottom > obj.collider.bottom &&
+            this.collider.top < obj.collider.top &&
+            this.collider.left > obj.collider.left &&
+            this.collider.right < obj.collider.right
+        ) return obj
+    } 
 
-    contact(prm, key = 'name') {
+    #contact(prm, key, In) {
         let ot, res
 
         if (prm)
-            for (const obj of this._mgm.objects)
-                if (obj.objectId != this.objectId &&
-                    (res = this.contactObj(obj)))
-                    if (obj[key] == prm) {
-                        ot = res
-                        break
-                    }
+            if (typeof prm == 'object') {
+                if (res = this.#contactObj(prm, In))
+                    ot = res
+            } else
+                for (const obj of this._mgm.objects)
+                    if (obj.objectId != this.objectId &&
+                        (res = this.#contactObj(obj, In)))
+                        if (obj[key] == prm) {
+                            ot = res
+                            break
+                        }
 
         if (!prm)
             for (const obj of this._mgm.objects)
                 if (obj.objectId != this.objectId &&
-                    (res = this.contactObj(obj))) {
+                    (res = this.#contactObj(obj, In))) {
                     ot = res
                     break
                 }
@@ -1965,80 +1979,51 @@ class MGMObject {
         return ot
     }
 
+    contact(prm, key = 'name') {
+        return this.#contact(prm, key, false)
+    }
 
-    contacts(prm, key = 'name') {
+    
+    contactIn(prm, key = 'name') {
+        return this.#contact(prm, key, true)
+    }
+
+
+    #contacts(prm, key = 'name', In) {
         let ot = []
         let res
 
         if (prm)
-            for (const obj of this._mgm.objects)
-                if (obj.objectId != this.objectId)
-                    if (obj[key] == prm)
-                        if (res = this.contactObj(obj))
-                            ot.push(res)
+            if (Array.isArray(prm)) {
+                for (const obj of prm)
+                    if (res = this.#contactObj(obj, In))
+                        ot.push(res)
+            } else
+                for (const obj of this._mgm.objects)
+                    if (obj.objectId != this.objectId)
+                        if (obj[key] == prm)
+                            if (res = this.#contactObj(obj, In))
+                                ot.push(res)
 
         if (!prm)
             for (const obj of this._mgm.objects)
                 if (obj.objectId != this.objectId)
-                    if (res = this.contactObj(obj))
+                    if (res = this.#contactObj(obj, In))
                         ot.push(res)
 
         return ot
     }
 
 
+    contacts(prm, key = 'name') {
+        return this.#contacts(prm, key, false)
+    }
+
+
     contactsIn(prm, key = 'name') {
-        const mas = []
-        const ot = []
-        let res
-
-        for (const obj of this._mgm.objects)
-            if (obj != this)
-                if (res = this.contactObjIn(obj))
-                    mas.push(res)
-
-        if (prm)
-            for (const obj of mas)
-                if (obj[key] == prm) ot.push(obj)
-
-        if (prm === undefined) ot = mas
-
-        return ot
+        return this.#contacts(prm, key, true)
     }
 
-
-    contactObjIn(obj) {
-        if (this.active && !this.hidden &&
-            obj.active && !obj.hidden &&
-            this.collider.bottom > obj.collider.bottom &&
-            this.collider.top < obj.collider.top &&
-            this.collider.left > obj.collider.left &&
-            this.collider.right < obj.collider.right) return obj
-    }
-
-
-    contactIn(prm, key = 'name') {
-        let ot, res
-
-        if (prm)
-            for (const obj of this._mgm.objects)
-                if (obj.objectId != this.objectId &&
-                    (res = this.contactObjIn(obj)))
-                    if (obj[key] == prm) {
-                        ot = res
-                        break
-                    }
-
-        if (!prm)
-            for (const obj of this._mgm.objects)
-                if (obj.objectId != this.objectId &&
-                    (res = this.contactObjIn(obj))) {
-                    ot = res
-                    break
-                }
-
-        return ot
-    }
 
 
     raycast(prm) {
@@ -2091,25 +2076,22 @@ class MGMObject {
     }
 
 
-    positionTo(prm) {
-        let obj = prm
-        if (typeof prm == 'string') obj = this._mgm.getObj(prm)
+    positionTo(obj) {
+        if (typeof obj == 'string') obj = this._mgm.getObj(obj)
         if (!obj) return
         this.x = obj.x
         this.y = obj.y
     }
 
 
-    angleTo(prm) {
-        let obj = prm
-        if (typeof prm == 'string') obj = this._mgm.getObj(prm)
+    angleTo(obj) {
+        if (typeof obj == 'string') obj = this._mgm.getObj(obj)
         return this._mgm.angleObj(this, obj)
     }
 
 
-    distanceTo(prm) {
-        let obj = prm
-        if (typeof prm == 'string') obj = this._mgm.getObj(prm)
+    distanceTo(obj) {
+        if (typeof obj == 'string') obj = this._mgm.getObj(obj)
         return this._mgm.distanceObj(this, obj)
     }
 
@@ -2165,7 +2147,7 @@ class MGMObject {
         if (this._mgm.isMobile && this._mgm.touch.down)
             return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
     }
-    
+
 
 
 
