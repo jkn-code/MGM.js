@@ -530,7 +530,6 @@ class MGM {
         if (typeof prm == 'object') sound.src = prm.src
         else sound.src = prm
 
-        if (prm.onended !== undefined) sound.onended = prm.onended
 
         if (prm.volume !== undefined) {
             sound.vol = prm.volume
@@ -1246,7 +1245,6 @@ class MGMObject {
                     this[j][s].volume = v[s].volume
                     this[j][s].vol = v[s].vol
                     this[j][s].loop = v[s].loop
-                    this[j][s].onended = v[s].onended
                 }
             } else {
                 if (this.isClone) this[j] = JSON.parse(JSON.stringify(v))
