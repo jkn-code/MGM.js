@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.37');
+console.log('MGM.js 1.38');
 
 
 
@@ -257,10 +257,11 @@ class MGM {
             }
         }
 
-        document.addEventListener("contextmenu", e => e.preventDefault())
-        document.addEventListener("touchstart", toushFn)
-        document.addEventListener("touchend", toushFn)
-        document.addEventListener("touchmove", toushFn)
+
+        this.canvas.addEventListener("contextmenu", e => e.preventDefault())
+        this.canvas.addEventListener("touchstart", toushFn)
+        this.canvas.addEventListener("touchend", toushFn)
+        this.canvas.addEventListener("touchmove", toushFn)
 
         const color = this.params.mobileColor || 'gray'
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
@@ -1618,10 +1619,9 @@ class MGMObject {
 
         this._mgm.context.save()
         this._mgm.context.translate(
-            this.x + this._mgm.canvCX + this._cameraZXm + this.collider._px,
-            -this.y + this._mgm.canvCY + this._camersZYm + this.collider._py
+            this.x + this._mgm.canvCX + this._cameraZXm,
+            -this.y + this._mgm.canvCY + this._camersZYm
         )
-
         this.#drawPrimitives(2)
 
         if (this.alpha !== undefined) this._mgm.context.globalAlpha = this.alpha
@@ -1633,20 +1633,21 @@ class MGMObject {
 
         if (this._image && !this._image._pic)
             this._mgm.context.drawImage(this._image,
-                -this._width / 2,
-                -this._height / 2,
+                -this._width / 2 + this.collider._px,
+                -this._height / 2 + this.collider._py,
                 this._width,
                 this._height)
-        else if (this._image && this._image._pic)
-            this._mgm.context.drawImage(this._image._pic,
-                this._image.x,
-                this._image.y,
-                this._image.width,
-                this._image.height,
-                -this._width / 2,
-                -this._height / 2,
-                this._width,
-                this._height)
+        else
+            if (this._image && this._image._pic)
+                this._mgm.context.drawImage(this._image._pic,
+                    this._image.x,
+                    this._image.y,
+                    this._image.width,
+                    this._image.height,
+                    -this._width / 2,
+                    -this._height / 2,
+                    this._width,
+                    this._height)
 
         this.#drawPrimitives(1)
 
@@ -1794,11 +1795,18 @@ class MGMObject {
         if (prm.alpha !== undefined) this._mgm.context.globalAlpha = prm.alpha
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
+        if (!prm.end) prm.end = 0
         this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         else prm.pattern = []
-        this._mgm.context.arc(prm.x, -prm.y,
-            prm.radius, 0, 2 * Math.PI)
+        this._mgm.context.arc(
+            prm.x,
+            -prm.y,
+            prm.radius,
+            prm.end * Math.PI / 180,
+            2 * Math.PI
+        )
+
         if (prm.fillColor && prm.fillColor != '') {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
@@ -1931,7 +1939,7 @@ class MGMObject {
 
 
     #contactObj(obj, In) {
-        if (!In && 
+        if (!In &&
             this.active && !this.hidden &&
             obj.active && !obj.hidden &&
             this.collider.top + 1 > obj.collider.bottom &&
@@ -1940,7 +1948,7 @@ class MGMObject {
             this.collider.left - 1 < obj.collider.right
         ) return obj
 
-        if (In && 
+        if (In &&
             this.active && !this.hidden &&
             obj.active && !obj.hidden &&
             this.collider.bottom > obj.collider.bottom &&
@@ -1948,7 +1956,7 @@ class MGMObject {
             this.collider.left > obj.collider.left &&
             this.collider.right < obj.collider.right
         ) return obj
-    } 
+    }
 
     #contact(prm, key, In) {
         let ot, res
@@ -1981,7 +1989,7 @@ class MGMObject {
         return this.#contact(prm, key, false)
     }
 
-    
+
     contactIn(prm, key = 'name') {
         return this.#contact(prm, key, true)
     }
