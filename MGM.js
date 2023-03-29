@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.38');
+console.log('MGM.js 1.39');
 
 
 
@@ -71,6 +71,7 @@ class MGM {
             plTxt = this.params.platformError || 'Use only on mobile'
             plOk = false
         }
+        if (this.params.platform == 'all') plOk = true
         if (!plOk) {
             this.curtainIn.innerHTML = plTxt
             return
@@ -265,10 +266,9 @@ class MGM {
 
         const color = this.params.mobileColor || 'gray'
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
-        let control = this.params.mobileControl || 'stickL, br1, br2, br3, br4'
-        if (this.params.mobileControl === false) control = ''
+        if (!this.params.mobileControl) this.params.mobileControl = ''
 
-        control.split(',').forEach(c => {
+        this.params.mobileControl.split(',').forEach(c => {
             const name = c.trim()
 
             let bcrd = ''
@@ -893,6 +893,9 @@ class MGM {
         return 0;
     }
 
+    fullscreen() {
+        this.#toggleFullScreen()
+    }
 
     #toggleFullScreen() {
         var doc = window.document;
@@ -1423,8 +1426,19 @@ class MGMObject {
             this.#physicWork()
 
             if (this.bounce) {
-                if (this.collider.right > this._mgm.canvCX || this.collider.left < -this._mgm.canvCX) this.angle = -this.angle
-                if (this.collider.top > this._mgm.canvCY || this.collider.bottom < -this._mgm.canvCY) this.angle = 180 - this.angle
+                this.bounceEv = false
+                if (this.collider.right > this._mgm.canvCX
+                    || this.collider.left < -this._mgm.canvCX
+                ) {
+                    this.angle = -this.angle
+                    this.bounceEv = true
+                }
+                if (this.collider.top > this._mgm.canvCY
+                    || this.collider.bottom < -this._mgm.canvCY
+                ) {
+                    this.angle = 180 - this.angle
+                    this.bounceEv = true
+                }
             }
         }
 
@@ -1644,8 +1658,8 @@ class MGMObject {
                     this._image.y,
                     this._image.width,
                     this._image.height,
-                    -this._width / 2,
-                    -this._height / 2,
+                    -this._width / 2 + this.collider._px,
+                    -this._height / 2 + this.collider._py,
                     this._width,
                     this._height)
 
