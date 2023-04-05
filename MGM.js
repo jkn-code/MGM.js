@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.39');
+console.log('MGM.js 1.41');
 
 
 
@@ -259,10 +259,11 @@ class MGM {
         }
 
 
-        this.canvas.addEventListener("contextmenu", e => e.preventDefault())
-        this.canvas.addEventListener("touchstart", toushFn)
-        this.canvas.addEventListener("touchend", toushFn)
-        this.canvas.addEventListener("touchmove", toushFn)
+        document.addEventListener("contextmenu", e => e.preventDefault())
+        document.addEventListener("touchstart", toushFn)
+        document.addEventListener("touchend", toushFn)
+        document.addEventListener("touchmove", toushFn)
+
 
         const color = this.params.mobileColor || 'gray'
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
@@ -326,24 +327,27 @@ class MGM {
                     y2: top + cpos.height,
                     px: left + 60,
                     py: top + 60,
-                    d1: 20,
+                    d1: 10,
                     d2: 60,
                 })
             }
         })
 
-        this.#touchBtns.forEach(bt => {
+        this.#touchBtns.forEach(btn => {
             for (const j in this.params.mobileStyle)
                 for (const k in this.params.mobileStyle[j])
-                    if (bt.name == j)
-                        bt.el.style[k] = this.params.mobileStyle[j][k]
+                    if (btn.name == j)
+                        btn.el.style[k] = this.params.mobileStyle[j][k]
         })
-        this.#touchSticks.forEach(st => {
+
+        this.#touchSticks.forEach(stick => {
             for (const j in this.params.mobileStyle)
                 for (const k in this.params.mobileStyle[j])
-                    if (st.name == j)
-                        st.el.style[k] = this.params.mobileStyle[j][k]
+                    if (stick.name == j)
+                        stick.el.style[k] = this.params.mobileStyle[j][k]
         })
+
+        console.log(this.touches);
     }
 
 
@@ -465,6 +469,7 @@ class MGM {
         if (this.params.fullscreen && this.params.autorun === false)
             this.#toggleFullScreen()
         this.curtainIn.innerHTML = ''
+        document.querySelector('.mgm-plane').style.display = 'block'
         this.resizeWin()
         this.objectsId = 0
         this.RUN = true
@@ -634,6 +639,28 @@ class MGM {
             }
         })
 
+        this.#touchBtns.forEach(btn => {
+            const cpos = btn.el.getBoundingClientRect()
+            const left = cpos.left - this.canvas.cpos.left
+            const top = cpos.top - this.canvas.cpos.top
+            btn.x1 = left
+            btn.y1 = top
+            btn.x2 = left + cpos.width
+            btn.y2 = top + cpos.height
+        })
+
+        this.#touchSticks.forEach(stick => {
+            const cpos = stick.el.getBoundingClientRect()
+            const left = cpos.left - this.canvas.cpos.left
+            const top = cpos.top - this.canvas.cpos.top
+            stick.x1 = left
+            stick.y1 = top
+            stick.x2 = left + cpos.width
+            stick.y2 = top + cpos.height
+            stick.px = left + 60
+            stick.py = top + 60
+        })
+
         if (this.objectsId > 0) this.#loopDraw()
     }
 
@@ -672,15 +699,15 @@ class MGM {
         if (!this.isMobile) return
 
         for (const btn of this.#touchBtns) this.touch[btn.name] = false
-        for (const stick of this.#touchBtns) this.touch[stick.name] = false
+        for (const stick of this.#touchSticks) this.touch[stick.name] = false
 
         let joy = false
 
         for (const ti of this.touches) {
-
             for (const btn of this.#touchBtns) {
-                if (ti.px > btn.x1 && ti.px < btn.x2 &&
-                    ti.py > btn.y1 && ti.py < btn.y2) {
+                if (ti.px > btn.x1 && ti.px < btn.x2
+                    && ti.py > btn.y1 && ti.py < btn.y2
+                ) {
                     this.touch[btn.name] = true
                     if (!this.#touchSK[btn.name]) {
                         this.touchS[btn.name] = true
@@ -692,7 +719,9 @@ class MGM {
             }
 
             for (const stick of this.#touchSticks) {
-                if (ti.px > stick.x1 && ti.px < stick.x2 && ti.py > stick.y1 && ti.py < stick.y2) {
+                if (ti.px > stick.x1 && ti.px < stick.x2
+                    && ti.py > stick.y1 && ti.py < stick.y2
+                ) {
                     const d = this.distanceXY(ti.px, ti.py, stick.px, stick.py)
                     if (d > stick.d1 && d < stick.d2)
                         this.touch[stick.name] = -this.angleXY(stick.px, stick.py, ti.px, ti.py) + 180
@@ -1311,12 +1340,12 @@ class MGMObject {
         if (this.size === undefined) this.size = 1
         if (this.alpha === undefined) this.alpha = 1
 
-        if (this.collider.width == undefined) this.collider.width = 1
-        if (this.collider.height == undefined) this.collider.height = 1
-        if (this.collider.x == undefined) this.collider.x = 0
-        if (this.collider.y == undefined) this.collider.y = 0
-        if (this.collider.px == undefined) this.collider.px = 0
-        if (this.collider.py == undefined) this.collider.py = 0
+        if (this.collider.width === undefined) this.collider.width = 1
+        if (this.collider.height === undefined) this.collider.height = 1
+        if (this.collider.x === undefined) this.collider.x = 0
+        if (this.collider.y === undefined) this.collider.y = 0
+        if (this.collider.px === undefined) this.collider.px = 0
+        if (this.collider.py === undefined) this.collider.py = 0
 
         if (this.physics && this.mass) {
             if (!this.gravVel) this.gravVel = 0
@@ -1339,7 +1368,7 @@ class MGMObject {
         if (this.flipXV === undefined) this.flipXV = 1
         if (this.flipYV === undefined) this.flipYV = 1
 
-        if (!this.picName)
+        if (this.picName === undefined)
             this.picName = this._mgm.firstJ(this.pics)
 
         this._wait = {}
@@ -1382,6 +1411,9 @@ class MGMObject {
             this._noDrawS = true
         }
 
+        this.#animaWork()
+        this.#waitsWork()
+
         if (this.update && this.active) this.update(this)
 
         if (this.active) {
@@ -1390,8 +1422,6 @@ class MGMObject {
             if (this.update1000 && this._mgm.sch1000 == 0) this.update1000(this)
         }
 
-        this._waitsWork()
-        this.#animaWork()
         this.#work()
 
         if (this._goStart) delete this._goStart
@@ -1564,7 +1594,8 @@ class MGMObject {
                 if (obj.active && this.objectId != obj.objectId)
                     if (obj.physics == 'wall' || obj.physics == 'unit2')
                         if (this.collider.right - 5 > obj.collider.left &&
-                            this.collider.left + 5 < obj.collider.right) {
+                            this.collider.left + 5 < obj.collider.right
+                        ) {
                             if (this.collider.top > obj.collider.bottom &&
                                 this.collider.bottom - 1 < obj.collider.top) {
                                 this.onGround = true
@@ -1711,7 +1742,7 @@ class MGMObject {
 
     #getPic(name = this.picName) {
         if (name == '') name = this.picName
-        if (this._pics) return this._pics[name]
+        if (this._pics && this._pics[name]) return this._pics[name]
         return null
     }
 
@@ -1754,7 +1785,11 @@ class MGMObject {
         if (!prm.x) prm.x = 0
         if (!prm.y) prm.y = 0
         if (prm.text === undefined) prm.text = ''
-        this._mgm.context.fillText(prm.text, prm.x, -prm.y)
+        this._mgm.context.fillText(
+            prm.text,
+            prm.x + this.collider._px,
+            -prm.y + this.collider._py
+        )
     }
 
 
@@ -1771,8 +1806,8 @@ class MGMObject {
         else prm.pattern = []
         this._mgm.context.lineWidth = prm.width || 1
         this._mgm.context.strokeStyle = prm.color || 'black'
-        this._mgm.context.moveTo(prm.x1, -prm.y1)
-        this._mgm.context.lineTo(prm.x2, -prm.y2)
+        this._mgm.context.moveTo(prm.x1 + this.collider._px, -prm.y1 + this.collider._py)
+        this._mgm.context.lineTo(prm.x2 + this.collider._px, -prm.y2 + this.collider._py)
         this._mgm.context.stroke()
     }
 
@@ -1786,7 +1821,12 @@ class MGMObject {
         this._mgm.context.beginPath()
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         else prm.pattern = []
-        this._mgm.context.rect(prm.x, -prm.y, prm.width, -prm.height)
+        this._mgm.context.rect(
+            prm.x + this.collider._px,
+            -prm.y + this.collider._py,
+            prm.width,
+            -prm.height
+        )
         if (prm.fillColor && prm.fillColor != '') {
             this._mgm.context.fillStyle = prm.fillColor
             this._mgm.context.fill()
@@ -1814,8 +1854,8 @@ class MGMObject {
         if (prm.pattern) this._mgm.context.setLineDash(prm.pattern)
         else prm.pattern = []
         this._mgm.context.arc(
-            prm.x,
-            -prm.y,
+            prm.x + this.collider._px,
+            -prm.y + this.collider._py,
             prm.radius,
             prm.end * Math.PI / 180,
             2 * Math.PI
@@ -1846,8 +1886,8 @@ class MGMObject {
         else prm.pattern = []
         let i = 0
         for (const v of prm.corners) {
-            if (i == 0) this._mgm.context.moveTo(v[0], -v[1])
-            else this._mgm.context.lineTo(v[0], -v[1])
+            if (i == 0) this._mgm.context.moveTo(v[0] + this.collider._px, -v[1] + this.collider._py)
+            else this._mgm.context.lineTo(v[0] + this.collider._px, -v[1] + this.collider._py)
             i++
         }
         if (prm.fillColor) {
@@ -2201,7 +2241,7 @@ class MGMObject {
     }
 
 
-    _waitsWork() {
+    #waitsWork() {
         for (const j in this._wait) {
             const wait = this._wait[j]
             if (wait.sch == 0) {
