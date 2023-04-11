@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.41');
+console.log('MGM.js 1.42');
 
 
 
@@ -175,13 +175,14 @@ class MGM {
             z-index: 9999; 
             display: flex; 
             align-items: center; 
-            justify-content: center;`
+            justify-content: center;
+            line-height: 300%;`
         this.curtainIn = document.createElement('div')
         this.curtain.appendChild(this.curtainIn)
         this.curtainIn.style.cssText = 'text-align: center; padding: 30px;'
         if (this.params.startStyle)
             this.curtainIn.style.cssText += this.params.startStyle
-        this.curtainIn.innerHTML = 'Loading'
+        this.curtainIn.innerHTML = '<b>MGM.js</b><br><small>0/0</small>'
     }
 
 
@@ -259,11 +260,10 @@ class MGM {
         }
 
 
-        document.addEventListener("contextmenu", e => e.preventDefault())
-        document.addEventListener("touchstart", toushFn)
-        document.addEventListener("touchend", toushFn)
-        document.addEventListener("touchmove", toushFn)
-
+        this.canvas.addEventListener("contextmenu", e => e.preventDefault())
+        this.canvas.addEventListener("touchstart", toushFn)
+        this.canvas.addEventListener("touchend", toushFn)
+        this.canvas.addEventListener("touchmove", toushFn)
 
         const color = this.params.mobileColor || 'gray'
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
@@ -347,7 +347,6 @@ class MGM {
                         stick.el.style[k] = this.params.mobileStyle[j][k]
         })
 
-        console.log(this.touches);
     }
 
 
@@ -447,7 +446,7 @@ class MGM {
         }
 
         let loadWait = setInterval(() => {
-            this.curtainIn.innerHTML = '<b>MGM.js</b><br><br><br>Loading<br><br>' + this.#build.resLoad + " / " + this.#build.resAll
+            this.curtainIn.innerHTML = '<b>MGM.js</b><br><small>' + this.#build.resLoad + " / " + this.#build.resAll + '</small>'
             if (this.#build.resAll == this.#build.resLoad) {
                 clearInterval(loadWait)
                 setTimeout(() => {
@@ -469,7 +468,8 @@ class MGM {
         if (this.params.fullscreen && this.params.autorun === false)
             this.#toggleFullScreen()
         this.curtainIn.innerHTML = ''
-        document.querySelector('.mgm-plane').style.display = 'block'
+        if (document.querySelector('.mgm-plane'))
+            document.querySelector('.mgm-plane').style.display = 'block'
         this.resizeWin()
         this.objectsId = 0
         this.RUN = true
