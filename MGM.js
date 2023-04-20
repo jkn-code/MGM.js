@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.42');
+console.log('MGM.js 1.43');
 
 
 
@@ -204,7 +204,8 @@ class MGM {
             left: 50%; 
             transform: translate(-50%, -50%);
         `
-        if (this.params.pixel) this.canvas.style.cssText += 'image-rendering: pixelated; image-rendering: crisp-edges;'
+        if (this.params.pixel)
+            this.canvas.style.cssText += 'image-rendering: pixelated; image-rendering: crisp-edges;'
 
         this._defCtxText = {
             textAlign: 'left',
@@ -235,9 +236,12 @@ class MGM {
 
         this.touches = []
 
+        this.touchJoy = {}
+        this.touchesJoy = []
+
         if (!this.params.mobileStyle) this.params.mobileStyle = {}
 
-        const toushFn = e => {
+        const touchFn = e => {
             this.touches = e.touches
             for (let i = 0; i < this.touches.length; i++) {
                 const ti = this.touches[i]
@@ -259,11 +263,37 @@ class MGM {
             }
         }
 
+        const touchFnJoy = e => {
+            this.touchesJoy = e.touches
+            for (let i = 0; i < this.touchesJoy.length; i++) {
+                const ti = this.touchesJoy[i]
+                ti.px = ti.clientX - this.canvas.cpos.left
+                ti.py = ti.clientY - this.canvas.cpos.top
+                ti.x = ti.px / this.kfHeight - this.canvCX + this.camera.x
+                ti.y = -ti.py / this.kfHeight + this.canvCY + this.camera.y
+            }
+            if (this.touchesJoy[0]) {
+                this.touchJoy.down = true
+                this.touchJoy.x = this.touchesJoy[0].x
+                this.touchJoy.y = this.touchesJoy[0].y
+                this.touchJoy.px = this.touchesJoy[0].px
+                this.touchJoy.py = this.touchesJoy[0].py
+                this.touchJoy.wx = this.touchesJoy[0].clientX
+                this.touchJoy.wy = this.touchesJoy[0].clientY
+            } else {
+                this.touchJoy.down = false
+            }
+        }
+
+        document.addEventListener("contextmenu", e => e.preventDefault())
+        document.addEventListener("touchstart", touchFnJoy)
+        document.addEventListener("touchend", touchFnJoy)
+        document.addEventListener("touchmove", touchFnJoy)
 
         this.canvas.addEventListener("contextmenu", e => e.preventDefault())
-        this.canvas.addEventListener("touchstart", toushFn)
-        this.canvas.addEventListener("touchend", toushFn)
-        this.canvas.addEventListener("touchmove", toushFn)
+        this.canvas.addEventListener("touchstart", touchFn)
+        this.canvas.addEventListener("touchend", touchFn)
+        this.canvas.addEventListener("touchmove", touchFn)
 
         const color = this.params.mobileColor || 'gray'
         const styleBtn = 'position: absolute; background-color: ' + color + '; border: 2px solid ' + color + '; border-radius: 100px; z-index: 1000;'
@@ -703,7 +733,7 @@ class MGM {
 
         let joy = false
 
-        for (const ti of this.touches) {
+        for (const ti of this.touchesJoy) {
             for (const btn of this.#touchBtns) {
                 if (ti.px > btn.x1 && ti.px < btn.x2
                     && ti.py > btn.y1 && ti.py < btn.y2
@@ -765,11 +795,10 @@ class MGM {
 
         if (!this.isMobile) for (const k in this.press) this.press[k] = false
         else for (const k in this.touchS) this.touchS[k] = false
+    }
 
-
-
-
-
+    #loopEditor() {
+        this.#loopDraw()
     }
 
 
@@ -1442,7 +1471,7 @@ class MGMObject {
                     break
                 }
         }
-
+        this._scope = true
         this.#setScope()
 
         if (!this.nocont) {
@@ -1656,17 +1685,18 @@ class MGMObject {
     _draw() {
         if (this.onCamera === undefined) {
             this._cameraZXm = - this._mgm.camera.x * this.cameraZX
-            this._camersZYm = this._mgm.camera.y * this.cameraZY
+            this._cameraZYm = this._mgm.camera.y * this.cameraZY
         } else {
             this._cameraZXm = 0
-            this._camersZYm = 0
+            this._cameraZYm = 0
         }
 
         this._mgm.context.save()
         this._mgm.context.translate(
             this.x + this._mgm.canvCX + this._cameraZXm,
-            -this.y + this._mgm.canvCY + this._camersZYm
+            -this.y + this._mgm.canvCY + this._cameraZYm
         )
+
         this.#drawPrimitives(2)
 
         if (this.alpha !== undefined) this._mgm.context.globalAlpha = this.alpha
@@ -1712,11 +1742,11 @@ class MGMObject {
     #boardsShow(border) {
         const left = this.collider.left + this._mgm.canvCX + this._cameraZXm
         const right = this.collider.right + this._mgm.canvCX + this._cameraZXm
-        const top = -this.collider.top + this._mgm.canvCY + this._camersZYm
-        const bottom = -this.collider.bottom + this._mgm.canvCY + this._camersZYm
+        const top = -this.collider.top + this._mgm.canvCY + this._cameraZYm
+        const bottom = -this.collider.bottom + this._mgm.canvCY + this._cameraZYm
 
         this.#dot(this.x + this._mgm.canvCX + this._cameraZXm,
-            -this.y + this._mgm.canvCY + this._camersZYm)
+            -this.y + this._mgm.canvCY + this._cameraZYm)
 
         if (border[0] == 'dots') {
             this.#dot(left, top, border[1])
@@ -2108,7 +2138,7 @@ class MGMObject {
                 this._mgm.context.beginPath()
                 this._mgm.context.arc(
                     x + this._mgm.canvCX + this._cameraZXm,
-                    -y + this._mgm.canvCY + this._camersZYm,
+                    -y + this._mgm.canvCY + this._cameraZYm,
                     3, 0, 2 * Math.PI)
                 this._mgm.context.fillStyle = col
                 this._mgm.context.fill()
