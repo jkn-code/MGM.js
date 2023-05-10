@@ -1,6 +1,6 @@
 
 
-console.log('MGM.js 1.43');
+console.log('MGM.js 1.44');
 
 
 
@@ -638,7 +638,8 @@ class MGM {
         document.querySelectorAll('.mgm').forEach(el => {
             el.style.position = 'absolute'
             if (getComputedStyle(el).zIndex == 'auto') el.style.zIndex = 1
-            el.style.boxSizing = 'border-box'
+            if (getComputedStyle(el).boxSizing == '')
+                el.style.boxSizing = 'border-box'
 
             let left = parseFloat(el.getAttribute('mgm-left'))
             let right = parseFloat(el.getAttribute('mgm-right'))
@@ -655,16 +656,16 @@ class MGM {
             if (isNaN(y) && isNaN(bottom) && isNaN(top)) top = 0
 
             const elPos = el.getBoundingClientRect()
-
             if (!isNaN(left)) el.style.left = (cpos.left + left * kh) + 'px'
-            if (!isNaN(right)) el.style.left = (cpos.right - right * kh - elPos.width) + 'px'
+            if (!isNaN(right)) el.style.right = (right * kh + innerWidth - cpos.width - cpos.left) + 'px'
             if (!isNaN(top)) el.style.top = (cpos.top + top * kh) + 'px'
-            if (!isNaN(bottom)) el.style.top = (cpos.bottom - bottom * kh - elPos.height) + 'px'
+            if (!isNaN(bottom)) el.style.bottom = (bottom * kh + innerHeight - cpos.height - cpos.top) + 'px'
             if (!isNaN(x)) el.style.left = (cpos.left + this.canvCX * kh + x * kh) + 'px'
             if (!isNaN(y)) el.style.top = (cpos.top + this.canvCY * kh - y * kh) + 'px'
 
-            if (el.style.padding != '') {
-                if (!el.mgmPadding) el.mgmPadding = parseInt(el.style.padding.replace('px', ''))
+            if (getComputedStyle(el).padding != '') {
+                if (!el.mgmPadding)
+                    el.mgmPadding = parseInt(getComputedStyle(el).padding.replace('px', ''))
                 el.style.padding = (el.mgmPadding * kh) + 'px'
             }
         })
@@ -2215,17 +2216,17 @@ class MGMObject {
 
     click() {
         if (!this._mgm.isMobile && this._mgm.mouse.down) {
-            if (this._pressClick) {
+            if (this._pressClick && this.contactXY(this._mgm.mouse.x, this._mgm.mouse.y)) {
                 this._pressClick = false
                 setTimeout(() => this._pressClick = true, 300)
-                return this.contactXY(this._mgm.mouse.x, this._mgm.mouse.y)
+                return true
             }
         }
         if (this._mgm.isMobile && this._mgm.touch.down) {
-            if (this._pressClick) {
+            if (this._pressClick && this.contactXY(this._mgm.touch.x, this._mgm.touch.y)) {
                 this._pressClick = false
                 setTimeout(() => this._pressClick = true, 300)
-                return this.contactXY(this._mgm.touch.x, this._mgm.touch.y)
+                return true
             }
         }
     }
