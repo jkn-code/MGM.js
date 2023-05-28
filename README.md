@@ -13,7 +13,7 @@ ____
 
 Инструкция: [Wiki](https://github.com/jkn-code/MGM.js/wiki) 
 
-поддержать: [Donate](https://yoomoney.ru/to/410018410401723) / [boosty](https://boosty.to/mgm-js)
+поддержать: [Donate](https://yoomoney.ru/to/410018410401723) / [Boosty](https://boosty.to/mgm-js)
 
 Общаться: [Discord](https://discord.gg/mzmgJqH6Vj)
 
