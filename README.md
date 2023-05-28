@@ -8,12 +8,12 @@ Mini Game Maker
 - Классы `MGM` и `MGMObject` - готовы, но еще могут дорабатываться.
 - `MGM Map Editor` - редактор карт. В разработке.
 - `Инструкция` - в процессе (50%).
-- `Примеры` - в разработке (5%).
+- `Примеры` - в разработке (5%). 
 ____
 
 Инструкция: [Wiki](https://github.com/jkn-code/MGM.js/wiki) 
 
-поддержать: [Donate](https://yoomoney.ru/to/410018410401723) / [Boosty](https://boosty.to/mgm-js)
+Поддержать: [Yoomoney](https://yoomoney.ru/to/410018410401723) / [Boosty](https://boosty.to/mgm-js)
 
 Общаться: [Discord](https://discord.gg/mzmgJqH6Vj)
 
