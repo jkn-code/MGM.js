@@ -13,9 +13,9 @@ Mini Game Maker
 - `Примеры` - в разработке (5%).
 ____
 
-[Wiki](https://github.com/jkn-code/MGM.js/wiki) 
+Инструкция: [Wiki](https://github.com/jkn-code/MGM.js/wiki) 
 
-[Donate](https://yoomoney.ru/to/410018410401723)
+поддержать: [Donate](https://yoomoney.ru/to/410018410401723) / [boosty](https://boosty.to/mgm-js)
 
-[Discord](https://discord.gg/mzmgJqH6Vj)
+Общаться: [Discord](https://discord.gg/mzmgJqH6Vj)
 
